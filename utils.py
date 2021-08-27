@@ -221,8 +221,10 @@ def gastos(data, flow, moneda, months):
             (data.fecha.between(date_range[0], date_range[1])) &
             (data.proyecto.isin(proyectos_elegidos))
         ].reset_index(drop=True)
+        
+        data[moneda] = data[moneda].map('${:,.2f}'.format)
 
-        fig = px.treemap(data, path=[px.Constant("all")] + campos, values=moneda)
+        fig = px.treemap(data, path=[px.Constant("Todos")] + campos, values=moneda)
         fig.update_traces(root_color="lightgrey")
         fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
         st.plotly_chart(fig)
