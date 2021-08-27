@@ -9,6 +9,13 @@ data['fecha'] = data.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(f
 data_distr['fecha'] = data_distr.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
 months = [dt.datetime.date(month) for month in months]
 
+refresh = st.sidebar.button('Actualizar Datos', help='Descarga el Excel que contiene todos los movimientos')
+if refresh:
+  data, data_distr, months, quarters, cuentas = utils.load_data()
+  data['fecha'] = data.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
+  data_distr['fecha'] = data_distr.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
+  months = [dt.datetime.date(month) for month in months]
+
 st.sidebar.header("Navegación")
 
 pagina = st.sidebar.radio('Reporte', options=['Principal','Gastos'], index=0)
