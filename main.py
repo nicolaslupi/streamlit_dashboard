@@ -35,7 +35,7 @@ sites = st.sidebar.multiselect(
   sites
 )
 
-devengado = st.sidebar.checkbox(label='Devengado')
+devengado = st.sidebar.checkbox(label='Devengado', help='Distribuye gastos en el tiempo cuando corresponde. Por ejemplo, el caso de un depósito por un alquiler')
 
 if devengado:
   data_aux, flow, stock = utils.filter(data_distr, sites, moneda.lower())
