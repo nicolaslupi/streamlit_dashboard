@@ -2,7 +2,6 @@ import streamlit as st
 from streamlit import caching
 import utils
 import datetime as dt
-from dateutil.relativedelta import relativedelta
 import pandas as pd
 
 data, data_distr, months, quarters, cuentas = utils.load_data()
@@ -10,7 +9,7 @@ data['fecha'] = data.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(f
 data_distr['fecha'] = data_distr.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
 months = [dt.datetime.date(month) for month in months]
 
-refresh = st.sidebar.button('Actualizar Datos', help='Descarga el Excel que contiene todos los movimientos')
+refresh = st.sidebar.button('Actualizar Datos', help='Elimina Caché y actualiza datos desde Drive')
 if refresh:
   caching.clear_cache()
   data, data_distr, months, quarters, cuentas = utils.load_data()
@@ -35,15 +34,13 @@ sites = st.sidebar.multiselect(
   sites
 )
 
-devengado = st.sidebar.checkbox(label='Devengado', help='Distribuye gastos en el tiempo cuando corresponde. Por ejemplo, el caso de un depósito por un alquiler')
+devengado = st.sidebar.checkbox(label='Devengado', help='Distribuye gastos en el tiempo cuando corresponde. Por ejemplo, el caso de un depósito por un alquiler. No son números reales.')
 
 if devengado:
   data_aux, flow, stock = utils.filter(data_distr, sites, moneda.lower())
-  #data_aux = data_distr.copy()
 else:
   data_aux, flow, stock = utils.filter(data, sites, moneda.lower())
-  #data_aux = data.copy()
-
+  
 if pagina == 'Principal':
   st.title("Resumen de Cuentas")
   st.subheader('Estado de Caja')

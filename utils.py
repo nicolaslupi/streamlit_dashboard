@@ -146,6 +146,7 @@ def caja(data, flow, stock, moneda):
     )
 
     fig.update_yaxes(title_text=moneda.upper())
+    fig.update_layout(title='Estado de Caja')
     st.plotly_chart(fig)
 
     st.write('Últimos movimientos:')
@@ -185,7 +186,7 @@ def gastos(data, flow, moneda, months):
         )
     )
 
-    fig.update_layout(barmode='stack')
+    fig.update_layout(barmode='stack', title='Gastos Mensuales')
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig)
 
@@ -197,9 +198,7 @@ def gastos(data, flow, moneda, months):
         
         with cols1:
             date_range = st.slider('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), months[-1]), max_value=months[-1], format=format)
-            #st.write(months[0].tzinfo)
-        #with st.expander('Campos'):
-        
+            
         with st.expander('Proyectos'):
             proyectos = ['Todos'] + list(set(data.proyecto))
             proyectos.remove('Global')
