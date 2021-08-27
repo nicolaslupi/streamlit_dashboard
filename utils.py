@@ -192,7 +192,7 @@ def gastos(data, flow, moneda, months):
     st.title('Proyectos')
     
     with st.form(key = 'Form'):
-        format = 'M/YY'
+        format = 'MM/YY'
         cols1,_ = st.columns((1,2))
         
         with cols1:
