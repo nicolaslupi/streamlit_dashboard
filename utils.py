@@ -221,6 +221,7 @@ def gastos(data, flow, moneda, months):
             (data.fecha.between(date_range[0], date_range[1])) &
             (data.proyecto.isin(proyectos_elegidos))
         ].reset_index(drop=True)
+        data[moneda] = data[moneda].round(decimals=2)
         
         #data[moneda] = data[moneda].map('${:,.2f}'.format)
 
