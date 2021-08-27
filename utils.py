@@ -197,6 +197,7 @@ def gastos(data, flow, moneda, months):
         
         with cols1:
             date_range = st.slider('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), months[-1]), max_value=months[-1], format=format)
+            st.write(months)
         #with st.expander('Campos'):
         
         with st.expander('Proyectos'):
