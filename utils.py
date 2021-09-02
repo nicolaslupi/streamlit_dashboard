@@ -267,7 +267,8 @@ def gastos(data, flow, moneda, months):
             rows=['proyecto','sub_proyecto'],
             cols=['categoria'],
             vals=['usd'],
-            aggregatorName='Sum'
+            aggregatorName='Sum',
+            outfile_path='/tmp/pivottablejs.html'
             )
         st.subheader('Tabla Resumen')
         with open(pivot.src) as pivot:
