@@ -19,8 +19,6 @@ if refresh:
   data_distr['fecha'] = data_distr.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
   months = [dt.datetime.date(month) for month in months]
 
-
-
 st.sidebar.header("Navegación")
 
 pagina = st.sidebar.radio('Reporte', options=['Principal','Gastos'], index=0)

@@ -167,7 +167,7 @@ def caja(data, flow, stock, moneda):
         mayor[flujo] = mayor[moneda] * ( (mayor.origen == cuenta)*-1 + (mayor.destino == cuenta)*1 )
 
     mayor[stock] = mayor[flujo].cumsum()
-    mayor = mayor[['fecha',flujo,stock,'categoria','sub_categoria_1','proyecto','cuenta','proveedor','detalle','site']]
+    mayor = mayor[['fecha',flujo,stock,'categoria','sub_categoria_1','proyecto','cuenta','proveedor','detalle','comprobante','site']]
     mayor[flujo] = mayor[flujo].map('${:,.2f}'.format)
     mayor[stock] = mayor[stock].map('${:,.2f}'.format)
     mayor = mayor[::-1]
