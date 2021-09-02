@@ -171,12 +171,14 @@ def caja(data, flow, stock, moneda):
     mayor[flujo] = mayor[flujo].map('${:,.2f}'.format)
     mayor[stock] = mayor[stock].map('${:,.2f}'.format)
     mayor = mayor[::-1]
-    #st.table(mayor.tail(10).assign(hack='').set_index('hack'))
-
+    mayor.fillna('', inplace=True)
+    
     gb = GridOptionsBuilder.from_dataframe(mayor)
     gb.configure_pagination()
+    gb.configure_side_bar()
+    gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc='sum', editable=True)
     gridOptions = gb.build()
-    AgGrid(mayor, gridOptions = gridOptions)
+    AgGrid(mayor, gridOptions = gridOptions) #enable_enterprise_modules=True)
 
 
 def gastos(data, flow, moneda, months):
