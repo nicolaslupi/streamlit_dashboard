@@ -4,6 +4,8 @@ import utils
 import datetime as dt
 import pandas as pd
 
+st.set_page_config(page_title="Epic Dashboard") 
+
 data, data_distr, months, quarters, cuentas = utils.load_data()
 data['fecha'] = data.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
 data_distr['fecha'] = data_distr.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
@@ -16,6 +18,8 @@ if refresh:
   data['fecha'] = data.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
   data_distr['fecha'] = data_distr.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
   months = [dt.datetime.date(month) for month in months]
+
+
 
 st.sidebar.header("Navegación")
 

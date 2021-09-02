@@ -1,6 +1,9 @@
 import os
 import wget
 import streamlit as st
+import streamlit.components.v1 as components
+from st_aggrid import AgGrid
+from st_aggrid.grid_options_builder import GridOptionsBuilder
 import pandas as pd
 import numpy as np
 import datetime as dt
@@ -8,6 +11,7 @@ from dateutil.relativedelta import relativedelta
 import re
 import plotly.graph_objects as go
 import plotly.express as px
+from pivottablejs import pivot_ui
 
 Caja = set(['caja ars','caja usd','ml','banco','electronica','estructuras','propulsion','accounting','sendwyre'])
 Transferencias = set(['epic'])
@@ -149,7 +153,7 @@ def caja(data, flow, stock, moneda):
     fig.update_layout(title='Estado de Caja')
     st.plotly_chart(fig)
 
-    st.write('Últimos movimientos:')
+    st.subheader('Últimos movimientos:')
 
     flujo = 'flujo (' + moneda + ')'
     stock = 'stock (' + moneda + ')'
@@ -163,12 +167,18 @@ def caja(data, flow, stock, moneda):
         mayor[flujo] = mayor[moneda] * ( (mayor.origen == cuenta)*-1 + (mayor.destino == cuenta)*1 )
 
     mayor[stock] = mayor[flujo].cumsum()
-    mayor = mayor[['fecha',flujo,stock,'categoria','sub_categoria_1','proyecto','cuenta','proveedor','detalle']]
+    mayor = mayor[['fecha',flujo,stock,'categoria','sub_categoria_1','proyecto','cuenta','proveedor','detalle','site']]
     mayor[flujo] = mayor[flujo].map('${:,.2f}'.format)
     mayor[stock] = mayor[stock].map('${:,.2f}'.format)
+    mayor = mayor[::-1]
+    #st.table(mayor.tail(10).assign(hack='').set_index('hack'))
 
-    st.dataframe(mayor.tail(10).assign(hack='').set_index('hack'))
-    
+    gb = GridOptionsBuilder.from_dataframe(mayor)
+    gb.configure_pagination()
+    gridOptions = gb.build()
+    AgGrid(mayor, gridOptions = gridOptions)
+
+
 def gastos(data, flow, moneda, months):
     fig = go.Figure(data=[
           go.Bar(name='FOPEX', x=flow.index, y=flow.FOPEX),
@@ -192,27 +202,33 @@ def gastos(data, flow, moneda, months):
 
     st.title('Proyectos')
     
-    with st.form(key = 'Form'):
-        format = 'MM/YY'
-        cols1,_ = st.columns((1,2))
+    format = 'MM/YY'
+    cols1,_ = st.columns((1,2))
+    
+    with cols1:
+        date_range = st.slider('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), months[-1]), max_value=months[-1], format=format)
         
-        with cols1:
-            date_range = st.slider('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), months[-1]), max_value=months[-1], format=format)
-            
-        with st.expander('Proyectos'):
-            proyectos = ['Todos'] + list(set(data.proyecto))
-            proyectos.remove('Global')
+    with st.expander('Proyectos'):
+        proyectos = ['Todos'] + list(set(data.proyecto))
+        proyectos.remove('Global')
 
-            proyectos_elegidos = st.multiselect('', proyectos, ['Todos'])
-            if 'Todos' in proyectos_elegidos:
-                proyectos_elegidos = proyectos
+        proyectos_elegidos = st.multiselect('', proyectos, ['Todos'])
+        if 'Todos' in proyectos_elegidos:
+            proyectos_elegidos = proyectos
 
-        campos = st.multiselect(
-            'Campos (el orden importa)',
+    with st.form(key = 'Form'):
+        campos1 = st.multiselect(
+            'Campos Gráfico 1 (el orden importa)',
             ['Categoria','Proyecto','Sub_proyecto','Sistema','Destino'],
             ['Proyecto','Sub_proyecto','Categoria'])
         
-        campos = list(map(str.lower, campos))
+        campos1 = list(map(str.lower, campos1))
+
+        campos2 = st.multiselect(
+            'Campos Gráfico 2 (el orden importa)', options=['Categoria','Proyecto','Sub_proyecto','Sistema','Destino'],
+            default=['Categoria','Proyecto','Sub_proyecto'])
+        
+        campos2 = list(map(str.lower, campos2))
 
         submitted = st.form_submit_button(label = 'Submit')
     
@@ -223,7 +239,36 @@ def gastos(data, flow, moneda, months):
         ].reset_index(drop=True)
         data[moneda] = data[moneda].round(decimals=2)
         
-        fig = px.treemap(data, path=[px.Constant("Todos")] + campos, values=moneda)
+        fig = px.treemap(data, path=[px.Constant("Todos")] + campos1, values=moneda)
         fig.update_traces(root_color="lightgrey")
         fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
+        st.subheader( ' --> '.join(map(str.title, campos1)) )
         st.plotly_chart(fig)
+
+        fig = px.treemap(data, path=[px.Constant("Todos")] + campos2, values=moneda)
+        fig.update_traces(root_color="lightgrey")
+        fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
+        st.subheader( ' --> '.join(map(str.title, campos2)) )
+        st.plotly_chart(fig)
+
+        
+        pivot = pivot_ui(
+            data[[
+                'categoria',
+                'sub_categoria_1',
+                'proyecto',
+                'sub_proyecto',
+                'sistema',
+                'destino',
+                'cuenta',
+                'detalle',
+                'usd'
+            ]],
+            rows=['proyecto','sub_proyecto'],
+            cols=['categoria'],
+            vals=['usd'],
+            aggregatorName='Sum'
+            )
+        st.subheader('Tabla Resumen')
+        with open(pivot.src) as pivot:
+            components.html(pivot.read(), width=900, height=1000, scrolling=True)
