@@ -173,9 +173,11 @@ def caja(data, flow, stock, moneda):
         mayor[flujo] = mayor[moneda] * ( (mayor.origen == cuenta)*-1 + (mayor.destino == cuenta)*1 )
 
     mayor[stock] = mayor[flujo].cumsum()
-    mayor = mayor[['fecha',flujo,stock,'categoria','sub_categoria_1','proyecto','cuenta','proveedor','detalle','comprobante','site']]
+    mayor = mayor[['id','fecha',flujo,stock,'categoria','sub_categoria_1','proyecto','cuenta','proveedor','detalle','comprobante','site']]
     mayor[flujo] = mayor[flujo].map('${:,.2f}'.format)
     mayor[stock] = mayor[stock].map('${:,.2f}'.format)
+    #mayor[flujo] = mayor[flujo].round(2)
+    #mayor[stock] = mayor[stock].round(2)
     mayor = mayor[::-1]
     mayor.fillna('', inplace=True)
     
@@ -184,8 +186,10 @@ def caja(data, flow, stock, moneda):
     gb.configure_side_bar()
     gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc='sum', editable=True)
     gridOptions = gb.build()
-    AgGrid(mayor, gridOptions = gridOptions) #enable_enterprise_modules=True)
-
+    
+    #gridOptions['columnDefs'] = [{'field':col, 'pivot':True, 'value':True} if col in ['categoria','sub_categoria_1'] else \
+    #    {'field':col, 'pivot':False, 'value':True} for col in mayor.columns]
+    AgGrid(mayor, gridOptions = gridOptions)#, enable_enterprise_modules=True)
 
 def gastos(data, flow, moneda, months):
     fig = go.Figure(data=[

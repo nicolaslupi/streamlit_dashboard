@@ -4,7 +4,7 @@ import utils
 import datetime as dt
 import pandas as pd
 
-st.set_page_config(page_title="Epic Dashboard") 
+st.set_page_config(page_title="Epic Dashboard", layout='wide', page_icon='🛰') 
 
 data, data_distr, months, quarters, cuentas = utils.load_data()
 data['fecha'] = data.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
