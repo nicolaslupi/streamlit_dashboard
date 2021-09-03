@@ -26,7 +26,7 @@ CAPEX = set(['herramientas','materiales','infraestructura','mano de obra','rodad
 general_rd = set(['propulsion r&d','electronics r&d'])
 Hardware = set(['test equipment','vehicle r&d','propellant production hardware']).union(general_rd)
 
-gastos = OPEX.union(Otros_gastos, FOPEX, CAPEX, Hardware)
+cuentas_gastos = OPEX.union(Otros_gastos, FOPEX, CAPEX, Hardware)
 activo = Caja.union(OPEX, Otros_gastos, FOPEX, CAPEX, Hardware, Transferencias)
 pasivo = Aportes.union(Deudas, Otros_ingresos)
 
@@ -75,6 +75,18 @@ def get(data, cuenta, moneda):
     elif cuenta in pasivo:
         res = data[data.origen == cuenta][moneda].sum() - data[data.destino == cuenta][moneda].sum()
     return res
+
+class Proyectos():
+  def __init__(self, data):
+    self.flow = pd.DataFrame(index=pd.unique(data.month))
+    self.proyectos = set(data.proyecto)
+    sumas = pd.pivot_table( data, values='usd', index='month', columns=['proyecto','destino'], aggfunc=sum, fill_value=0)
+    restas = pd.pivot_table( data, values='usd', index='month', columns=['proyecto','origen'], aggfunc=sum, fill_value=0)
+    restas.columns.names = ['proyecto','destino']
+    tmp = sumas.sub(restas, axis=1, fill_value=0)
+    
+    self.flow[list(self.proyectos)] = np.array([tmp[proyecto][set(tmp[proyecto].columns)&cuentas_gastos].sum(axis=1) for proyecto in self.proyectos]).transpose()
+    self.stock = self.flow.cumsum()  
 
 @st.cache(allow_output_mutation=True)
 def load_data():
@@ -128,6 +140,11 @@ def filter(data, sites, moneda):
     flow.iloc[-1,-1] = flow.iloc[-2,-1]
 
     return data.copy(), flow, stock
+
+@st.cache
+def get_proyectos(data):
+    proyectos = Proyectos(data)
+    return proyectos
 
 def caja(data, flow, stock, moneda):
     cuenta = st.selectbox(label='Cuenta', options=list(map(str.title, ['Todas']+list(Caja))), index=0).lower()
@@ -228,6 +245,41 @@ def gastos(data, flow, moneda, months):
         if 'Todos' in proyectos_elegidos:
             proyectos_elegidos = proyectos
 
+    data_proyectos = data[
+                            (data.fecha.between(date_range[0], date_range[1])) &
+                            (data.proyecto.isin(proyectos_elegidos))
+                        ].sort_values(['fecha','id']).reset_index(drop=True).copy()
+    
+    proyectos = get_proyectos(data_proyectos)
+
+    fig = go.Figure(
+        data = [go.Scatter(name=proyecto, x=months, y=proyectos.flow[proyecto].cumsum(), stackgroup='one') for proyecto in proyectos.proyectos]        
+    )
+    fig.update_layout(title='Evolución de Proyectos')
+    fig.update_yaxes(title_text=moneda.upper())
+    st.plotly_chart(fig)
+
+    tmp = data_proyectos[::-1].fillna('').copy()
+    nombre = 'gasto (' + moneda + ')'
+    tmp[nombre] = tmp[moneda]
+    tmp = tmp[['id','fecha',nombre,'categoria','sub_categoria_1','sub_categoria_2','proyecto','sub_proyecto','sistema','cuenta','proveedor','detalle',
+                'comprobante','site']]
+    tmp[nombre] = tmp[nombre].map('${:,.2f}'.format)
+
+    st.subheader('Datos Seleccionados')
+
+    gb = GridOptionsBuilder.from_dataframe(tmp)
+    gb.configure_pagination()
+    gb.configure_side_bar()
+    gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc='sum', editable=True)
+    gridOptions = gb.build()
+    
+    #gridOptions['columnDefs'] = [{'field':col, 'pivot':True, 'value':True} if col in ['categoria','sub_categoria_1'] else \
+    #    {'field':col, 'pivot':False, 'value':True} for col in mayor.columns]
+    AgGrid(tmp, gridOptions = gridOptions)#, enable_enterprise_modules=True)
+
+    st.subheader('Treemaps')
+
     with st.form(key = 'Form'):
         campos1 = st.multiselect(
             'Campos Gráfico 1 (el orden importa)',
@@ -245,19 +297,19 @@ def gastos(data, flow, moneda, months):
         submitted = st.form_submit_button(label = 'Submit')
     
     if submitted:
-        data = data[
-            (data.fecha.between(date_range[0], date_range[1])) &
-            (data.proyecto.isin(proyectos_elegidos))
-        ].reset_index(drop=True)
-        data[moneda] = data[moneda].round(decimals=2)
+        # data = data[
+        #     (data.fecha.between(date_range[0], date_range[1])) &
+        #     (data.proyecto.isin(proyectos_elegidos))
+        # ].reset_index(drop=True)
+        data_proyectos[moneda] = data_proyectos[moneda].round(decimals=2)
         
-        fig = px.treemap(data, path=[px.Constant("Todos")] + campos1, values=moneda)
+        fig = px.treemap(data_proyectos, path=[px.Constant("Todos")] + campos1, values=moneda)
         fig.update_traces(root_color="lightgrey")
         fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
         st.subheader( ' --> '.join(map(str.title, campos1)) )
         st.plotly_chart(fig)
 
-        fig = px.treemap(data, path=[px.Constant("Todos")] + campos2, values=moneda)
+        fig = px.treemap(data_proyectos, path=[px.Constant("Todos")] + campos2, values=moneda)
         fig.update_traces(root_color="lightgrey")
         fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
         st.subheader( ' --> '.join(map(str.title, campos2)) )
@@ -265,7 +317,7 @@ def gastos(data, flow, moneda, months):
 
         
         pivot = pivot_ui(
-            data[[
+            data_proyectos[[
                 'categoria',
                 'sub_categoria_1',
                 'proyecto',
