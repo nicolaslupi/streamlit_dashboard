@@ -48,6 +48,7 @@ def process_string(s):
 
 def distribute_over_months(data):
     over_months = data[~pd.isna(data.over_months)]
+    rows = []
     for idx, row in over_months.iterrows():
         months = row.over_months
         monto = row.usd / months
@@ -57,11 +58,14 @@ def distribute_over_months(data):
         for _ in np.arange(1, months):
             row.month = row.month + relativedelta(months=+1)
             row.fecha = row.fecha + relativedelta(months=+1)
-            data = data.append( row )
+            rows.append( row.copy() )
+            #data = data.append( row )
+
+    data = data.append( rows )    
     data.reset_index(drop=True, inplace=True) 
     data.drop(data[data.fecha >= dt.datetime.today()].index, inplace=True)
     
-    return data.sort_values(by='fecha').reset_index(drop=True)
+    return data.sort_values(by=['fecha','id']).reset_index(drop=True)
 
 def get(data, cuenta, moneda):
     if cuenta in activo:
@@ -82,9 +86,9 @@ def load_data():
     data_us = pd.read_excel('data.xlsx', sheet_name='Input US', header=2)
     data_us['site'] = 'Montero'
 
-    data = data.append(data_us, ignore_index=True).sort_values('Fecha').reset_index(drop=True)
+    data = data.append(data_us, ignore_index=True).sort_values(['Fecha','Id']).reset_index(drop=True)
     data.columns = [col.lower().replace(' ', '_') for col in data.columns]
-    data.drop(['id','year','month'], axis=1, inplace=True)
+    data.drop(['year','month'], axis=1, inplace=True)
     data['month'] = data.fecha.apply(lambda fecha: fecha.replace(day=1))
     data['quarter'] = data.month.apply(lambda fecha: fecha.replace(month=int(np.ceil(fecha.month/3))))
     data['cuenta'] = data.cuenta.apply(process_string)
