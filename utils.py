@@ -44,7 +44,10 @@ def normalize(s):
     return s
 
 def process_string(s):
-    return normalize( re.sub(' +', ' ', str(s).lower()) )
+    if pd.isna(s):
+        return s
+    else:
+        return normalize( re.sub(' +', ' ', str(s).lower()) )
 
 def distribute_over_months(data):
     over_months = data[~pd.isna(data.over_months)]
@@ -59,8 +62,7 @@ def distribute_over_months(data):
             row.month = row.month + relativedelta(months=+1)
             row.fecha = row.fecha + relativedelta(months=+1)
             rows.append( row.copy() )
-            #data = data.append( row )
-
+            
     data = data.append( rows )    
     data.reset_index(drop=True, inplace=True) 
     data.drop(data[data.fecha >= dt.datetime.today()].index, inplace=True)
