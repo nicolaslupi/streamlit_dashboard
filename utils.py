@@ -253,8 +253,9 @@ def gastos(data, flow, moneda, months):
     proyectos = get_proyectos(data_proyectos)
 
     fig = go.Figure(
-        data = [go.Scatter(name=proyecto, x=months, y=proyectos.flow[proyecto].cumsum(), stackgroup='one') for proyecto in proyectos.proyectos]        
+        data = [go.Scatter(name=proyecto, x=proyectos.flow.index, y=proyectos.flow[proyecto].cumsum(), stackgroup='one') for proyecto in proyectos.proyectos]        
     )
+    
     fig.update_layout(title='Evolución de Proyectos')
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig)
