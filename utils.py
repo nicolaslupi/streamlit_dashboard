@@ -174,7 +174,7 @@ def caja(data, flow, stock, moneda):
 
     fig.update_yaxes(title_text=moneda.upper())
     fig.update_layout(title='Estado de Caja')
-    st.plotly_chart(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
     st.subheader('Últimos movimientos:')
 
@@ -225,9 +225,9 @@ def gastos(data, flow, moneda, months):
         )
     )
 
-    fig.update_layout(barmode='stack', title='Gastos Mensuales')
+    fig.update_layout(barmode='stack', title='Gastos Mensuales')#, height=500)
     fig.update_yaxes(title_text=moneda.upper())
-    st.plotly_chart(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
     st.title('Proyectos')
     
@@ -258,7 +258,7 @@ def gastos(data, flow, moneda, months):
     
     fig.update_layout(title='Evolución de Proyectos')
     fig.update_yaxes(title_text=moneda.upper())
-    st.plotly_chart(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
     tmp = data_proyectos[::-1].fillna('').copy()
     nombre = 'gasto (' + moneda + ')'
@@ -298,23 +298,19 @@ def gastos(data, flow, moneda, months):
         submitted = st.form_submit_button(label = 'Submit')
     
     if submitted:
-        # data = data[
-        #     (data.fecha.between(date_range[0], date_range[1])) &
-        #     (data.proyecto.isin(proyectos_elegidos))
-        # ].reset_index(drop=True)
         data_proyectos[moneda] = data_proyectos[moneda].round(decimals=2)
         
         fig = px.treemap(data_proyectos, path=[px.Constant("Todos")] + campos1, values=moneda)
         fig.update_traces(root_color="lightgrey")
         fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
         st.subheader( ' --> '.join(map(str.title, campos1)) )
-        st.plotly_chart(fig)
+        st.plotly_chart(fig, use_container_width=True)
 
         fig = px.treemap(data_proyectos, path=[px.Constant("Todos")] + campos2, values=moneda)
         fig.update_traces(root_color="lightgrey")
         fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
         st.subheader( ' --> '.join(map(str.title, campos2)) )
-        st.plotly_chart(fig)
+        st.plotly_chart(fig, use_container_width=True)
 
         
         pivot = pivot_ui(
