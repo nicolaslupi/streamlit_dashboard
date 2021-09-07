@@ -174,10 +174,9 @@ def caja(data, flow, stock, moneda):
     )
 
     fig.update_yaxes(title_text=moneda.upper())
-    fig.update_layout(title='Estado de Caja')
+    fig.update_layout(title='<b>Estado de Caja</b>')
     st.plotly_chart(fig, use_container_width=True)
 
-    
     
     st.write('Burn actual:', moneda.upper(), '{:,.0f} por mes'.format(flow.tail(1)['MA'].values[0]))
     st.write('Runway: {:,.0f} meses'.format((stock.tail(1)['Caja'] / flow.tail(1)['MA']).values[0]))
@@ -202,7 +201,7 @@ def caja(data, flow, stock, moneda):
         secondary_y=True
     )
 
-    fig.update_layout(title='Monthly Burn - Trailing 3 Months MA')
+    fig.update_layout(title='<b>Monthly Burn - Trailing 3 Months MA</b>')
     fig.update_yaxes(title_text="US$", secondary_y=False)
     fig.update_yaxes(title_text="Months", secondary_y=True)
 
@@ -257,7 +256,7 @@ def gastos(data, flow, moneda, months):
         )
     )
 
-    fig.update_layout(barmode='stack', title='Gastos Mensuales')#, height=500)
+    fig.update_layout(barmode='stack', title='<b>Gastos Mensuales</b>')#, height=500)
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig, use_container_width=True)
 
@@ -288,7 +287,7 @@ def gastos(data, flow, moneda, months):
         data = [go.Scatter(name=proyecto, x=proyectos.flow.index, y=proyectos.flow[proyecto].cumsum(), stackgroup='one') for proyecto in proyectos.proyectos]        
     )
     
-    fig.update_layout(title='Evolución de Proyectos')
+    fig.update_layout(title='<b>Evolución de Proyectos</b>')
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig, use_container_width=True)
 
