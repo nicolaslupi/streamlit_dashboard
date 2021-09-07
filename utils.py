@@ -10,6 +10,7 @@ import datetime as dt
 from dateutil.relativedelta import relativedelta
 import re
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import plotly.express as px
 from pivottablejs import pivot_ui
 
@@ -176,23 +177,54 @@ def caja(data, flow, stock, moneda):
     fig.update_layout(title='Estado de Caja')
     st.plotly_chart(fig, use_container_width=True)
 
+    
+    
+    st.write('Burn actual:', moneda.upper(), '{:,.0f} por mes'.format(flow.tail(1)['MA'].values[0]))
+    st.write('Runway: {:,.0f} meses'.format((stock.tail(1)['Caja'] / flow.tail(1)['MA']).values[0]))
+
+    fig = make_subplots( specs = [[{'secondary_y':True}]] )
+
+    fig.add_trace(
+        go.Scatter(
+            x=flow.index,
+            y=flow.MA,
+            name='Burn'
+        ),
+        secondary_y=False
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=flow.index,
+            y=stock.Caja / flow.MA,
+            name='Runway'
+        ),
+        secondary_y=True
+    )
+
+    fig.update_layout(title='Monthly Burn - Trailing 3 Months MA')
+    fig.update_yaxes(title_text="US$", secondary_y=False)
+    fig.update_yaxes(title_text="Months", secondary_y=True)
+
+    st.plotly_chart(fig, use_container_width=True)
+
     st.subheader('Últimos movimientos:')
 
-    flujo = 'flujo (' + moneda + ')'
-    stock = 'stock (' + moneda + ')'
+    flujo_nombre = 'flujo (' + moneda + ')'
+    stock_nombre = 'stock (' + moneda + ')'
     
     if cuenta == 'Caja':
         mayor = data[(data.destino.isin(Caja)) | (data.origen.isin(Caja))].reset_index(drop=True).copy()
-        mayor[flujo] = mayor[moneda] * ( (mayor.origen.isin(Caja))*-1 + (mayor.destino.isin(Caja))*1 )
+        mayor[flujo_nombre] = mayor[moneda] * ( (mayor.origen.isin(Caja))*-1 + (mayor.destino.isin(Caja))*1 )
         
     else:
         mayor = data[(data.destino == cuenta) | (data.origen == cuenta)].reset_index(drop=True).copy()
-        mayor[flujo] = mayor[moneda] * ( (mayor.origen == cuenta)*-1 + (mayor.destino == cuenta)*1 )
+        mayor[flujo_nombre] = mayor[moneda] * ( (mayor.origen == cuenta)*-1 + (mayor.destino == cuenta)*1 )
 
-    mayor[stock] = mayor[flujo].cumsum()
-    mayor = mayor[['id','fecha',flujo,stock,'categoria','sub_categoria_1','proyecto','cuenta','proveedor','detalle','comprobante','site']]
-    mayor[flujo] = mayor[flujo].map('${:,.2f}'.format)
-    mayor[stock] = mayor[stock].map('${:,.2f}'.format)
+    mayor[stock_nombre] = mayor[flujo_nombre].cumsum()
+    mayor = mayor[['id','fecha',flujo_nombre,stock_nombre,'categoria','sub_categoria_1','proyecto','cuenta','proveedor','detalle','comprobante','site']]
+    mayor[flujo_nombre] = mayor[flujo_nombre].map('${:,.2f}'.format)
+    mayor[stock_nombre] = mayor[stock_nombre].map('${:,.2f}'.format)
     #mayor[flujo] = mayor[flujo].round(2)
     #mayor[stock] = mayor[stock].round(2)
     mayor = mayor[::-1]
