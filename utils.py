@@ -14,6 +14,7 @@ from plotly.subplots import make_subplots
 import plotly.express as px
 from pivottablejs import pivot_ui
 
+colores = ['#1f77b4', '#ff7f0e', '#2ca02c','#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 Caja = set(['caja ars','caja usd','ml','banco','electronica','estructuras','propulsion','accounting','sendwyre'])
 Transferencias = set(['epic'])
 Aportes = set(['aportes','montero'])
@@ -77,17 +78,32 @@ def get(data, cuenta, moneda):
         res = data[data.origen == cuenta][moneda].sum() - data[data.destino == cuenta][moneda].sum()
     return res
 
+class Proyecto():
+  def __init__(self, data, months):
+    self.sub_proyectos = set(data.sub_proyecto)
+    self.flow = pd.DataFrame(index=months)
+    flow_aux = pd.DataFrame(index=pd.unique(data.month))
+    sumas = pd.pivot_table( data, values='usd', index='month', columns=['sub_proyecto','destino'], aggfunc=sum, fill_value=0 )
+    restas = pd.pivot_table( data, values='usd', index='month', columns=['sub_proyecto','origen'], aggfunc=sum, fill_value=0 )
+    restas.columns.names = ['sub_proyecto','destino']
+    tmp = sumas.sub(restas, axis=1, fill_value=0)
+    flow_aux[list(self.sub_proyectos)]  = np.array([tmp[sub_proyecto][set(tmp[sub_proyecto].columns)&cuentas_gastos].sum(axis=1) for sub_proyecto in self.sub_proyectos]).transpose()
+    self.flow = self.flow.join(flow_aux).fillna(0)
+    self.stock = self.flow.cumsum()
+
 class Proyectos():
   def __init__(self, data):
     self.flow = pd.DataFrame(index=pd.unique(data.month))
-    self.proyectos = set(data.proyecto)
+    self.names = set(data.proyecto)
     sumas = pd.pivot_table( data, values='usd', index='month', columns=['proyecto','destino'], aggfunc=sum, fill_value=0)
     restas = pd.pivot_table( data, values='usd', index='month', columns=['proyecto','origen'], aggfunc=sum, fill_value=0)
     restas.columns.names = ['proyecto','destino']
     tmp = sumas.sub(restas, axis=1, fill_value=0)
     
-    self.flow[list(self.proyectos)] = np.array([tmp[proyecto][set(tmp[proyecto].columns)&cuentas_gastos].sum(axis=1) for proyecto in self.proyectos]).transpose()
-    self.stock = self.flow.cumsum()  
+    self.flow[list(self.names)] = np.array([tmp[proyecto][set(tmp[proyecto].columns)&cuentas_gastos].sum(axis=1) for proyecto in self.names]).transpose()
+    self.stock = self.flow.cumsum()
+
+    self.proyectos = {proyecto: Proyecto(data[data.proyecto==proyecto], pd.unique(data.month)) for proyecto in self.names } 
 
 @st.cache(allow_output_mutation=True)
 def load_data():
@@ -283,9 +299,29 @@ def gastos(data, flow, moneda, months):
     
     proyectos = get_proyectos(data_proyectos)
 
-    fig = go.Figure(
-        data = [go.Scatter(name=proyecto, x=proyectos.flow.index, y=proyectos.flow[proyecto].cumsum(), stackgroup='one') for proyecto in proyectos.proyectos]        
-    )
+    subproyectos = st.checkbox(label='Visualizar Sub Proyectos')
+    if subproyectos:
+        fig = go.Figure()
+        i=0
+
+        for proyecto in proyectos.names:
+            for sub_proyecto in proyectos.proyectos[proyecto].sub_proyectos:
+                fig.add_trace(
+                go.Scatter(
+                    x=proyectos.proyectos[proyecto].stock.index,
+                    y=proyectos.proyectos[proyecto].stock[sub_proyecto],
+                    name=sub_proyecto + ' ' + proyecto,
+                    stackgroup='one',
+                    line_color=colores[ i % len(colores) ]
+                )
+            )
+            i+=1
+
+    else:
+
+        fig = go.Figure(
+            data = [go.Scatter(name=proyecto, x=proyectos.stock.index, y=proyectos.stock[proyecto], stackgroup='one') for proyecto in proyectos.names]        
+        )
     
     fig.update_layout(title='<b>Evolución de Proyectos</b>')
     fig.update_yaxes(title_text=moneda.upper())
