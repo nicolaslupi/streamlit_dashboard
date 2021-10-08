@@ -292,11 +292,12 @@ def gastos(data, flow, moneda, months):
         if 'Todos' in proyectos_elegidos:
             proyectos_elegidos = proyectos
 
+    data['month'] = data.month.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
     data_proyectos = data[
-                            (data.fecha.between(date_range[0], date_range[1])) &
+                            (data.month.between(date_range[0], date_range[1])) &
                             (data.proyecto.isin(proyectos_elegidos))
                         ].sort_values(['fecha','id']).reset_index(drop=True).copy()
-    
+
     proyectos = get_proyectos(data_proyectos)
 
     subproyectos = st.checkbox(label='Visualizar Sub Proyectos')
