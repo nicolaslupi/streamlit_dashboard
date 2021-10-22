@@ -49,4 +49,5 @@ if pagina == 'Principal':
   utils.caja(data_aux, flow, stock, moneda.lower())
 else:
   st.title('Reporte de Gastos')
-  utils.gastos(data_aux, flow, moneda.lower(), months)
+  date_range = st.sidebar.date_input('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), months[-1]), max_value=data_aux.fecha.values[-1])
+  utils.gastos(data_aux, flow, moneda.lower(), date_range)

@@ -135,7 +135,7 @@ def load_data():
 
     return data, data_distr, months, quarters, cuentas
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def filter(data, sites, moneda):
     data = data[data.site.isin(sites)].reset_index(drop=True)
     flow = pd.pivot_table( data, values=moneda, index='month', columns='destino', aggfunc=sum, fill_value=0).sub( \
@@ -255,7 +255,7 @@ def caja(data, flow, stock, moneda):
     #    {'field':col, 'pivot':False, 'value':True} for col in mayor.columns]
     AgGrid(mayor, gridOptions = gridOptions)#, enable_enterprise_modules=True)
 
-def gastos(data, flow, moneda, months):
+def gastos(data, flow, moneda, date_range):
     fig = go.Figure(data=[
           go.Bar(name='FOPEX', x=flow.index, y=flow.FOPEX),
           go.Bar(name='OPEX', x=flow.index, y=flow.OPEX),
@@ -276,13 +276,36 @@ def gastos(data, flow, moneda, months):
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig, use_container_width=True)
 
+    pivot = pivot_ui(
+        data[[
+            'categoria',
+            'sub_categoria_1',
+            'proyecto',
+            'sub_proyecto',
+            'sistema',
+            'destino',
+            'cuenta',
+            'detalle',
+            'usd'
+        ]],
+        rows=['proyecto','sub_proyecto','categoria'],
+        #cols=['categoria'],
+        vals=['usd'],
+        aggregatorName='Sum',
+        outfile_path='/tmp/pivottablejs.html'
+        )
+    st.header('Tabla Resumen')
+    with open(pivot.src) as pivot:
+        components.html(pivot.read(), width=900, height=1000, scrolling=True)
+
     st.title('Proyectos')
     
     format = 'MM/YY'
     cols1,_ = st.columns((1,2))
     
-    with cols1:
-        date_range = st.slider('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), months[-1]), max_value=months[-1], format=format)
+    #with cols1:
+    #    date_range = st.slider('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), months[-1]), max_value=months[-1], format=format)
+    #    date_range = st.date_input('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), months[-1]), max_value=months[-1])
         
     with st.expander('Proyectos'):
         proyectos = ['Todos'] + list(set(data.proyecto))
@@ -294,7 +317,7 @@ def gastos(data, flow, moneda, months):
 
     data['month'] = data.month.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
     data_proyectos = data[
-                            (data.month.between(date_range[0], date_range[1])) &
+                            (data.fecha.between(date_range[0], date_range[1])) &
                             (data.proyecto.isin(proyectos_elegidos))
                         ].sort_values(['fecha','id']).reset_index(drop=True).copy()
 
@@ -380,7 +403,6 @@ def gastos(data, flow, moneda, months):
         st.subheader( ' --> '.join(map(str.title, campos2)) )
         st.plotly_chart(fig, use_container_width=True)
 
-        
         pivot = pivot_ui(
             data_proyectos[[
                 'categoria',
