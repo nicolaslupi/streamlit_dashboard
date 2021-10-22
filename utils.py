@@ -403,24 +403,24 @@ def gastos(data, flow, moneda, date_range):
         st.subheader( ' --> '.join(map(str.title, campos2)) )
         st.plotly_chart(fig, use_container_width=True)
 
-        pivot = pivot_ui(
-            data_proyectos[[
-                'categoria',
-                'sub_categoria_1',
-                'proyecto',
-                'sub_proyecto',
-                'sistema',
-                'destino',
-                'cuenta',
-                'detalle',
-                'usd'
-            ]],
-            rows=['proyecto','sub_proyecto'],
-            cols=['categoria'],
-            vals=['usd'],
-            aggregatorName='Sum',
-            outfile_path='/tmp/pivottablejs.html'
-            )
-        st.subheader('Tabla Resumen')
-        with open(pivot.src) as pivot:
-            components.html(pivot.read(), width=900, height=1000, scrolling=True)
+        # pivot = pivot_ui(
+        #     data_proyectos[[
+        #         'categoria',
+        #         'sub_categoria_1',
+        #         'proyecto',
+        #         'sub_proyecto',
+        #         'sistema',
+        #         'destino',
+        #         'cuenta',
+        #         'detalle',
+        #         'usd'
+        #     ]],
+        #     rows=['proyecto','sub_proyecto'],
+        #     cols=['categoria'],
+        #     vals=['usd'],
+        #     aggregatorName='Sum',
+        #     outfile_path='/tmp/pivottablejs.html'
+        #     )
+        # st.subheader('Tabla Resumen')
+        # with open(pivot.src) as pivot:
+        #     components.html(pivot.read(), width=900, height=1000, scrolling=True)
