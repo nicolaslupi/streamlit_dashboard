@@ -101,7 +101,10 @@ class Proyectos():
     tmp = sumas.sub(restas, axis=1, fill_value=0)
     
     self.flow[list(self.names)] = np.array([tmp[proyecto][set(tmp[proyecto].columns)&cuentas_gastos].sum(axis=1) for proyecto in self.names]).transpose()
+    self.flow['Outflows'] = self.flow.sum(axis=1)
     self.stock = self.flow.cumsum()
+    self.flow['MA'] = self.flow['Outflows'].rolling(window=3).mean()
+    self.flow.iloc[-1,-1] = self.flow.iloc[-2,-1]
 
     self.proyectos = {proyecto: Proyecto(data[data.proyecto==proyecto], pd.unique(data.month)) for proyecto in self.names } 
 
@@ -256,23 +259,49 @@ def caja(data, flow, stock, moneda):
     AgGrid(mayor, gridOptions = gridOptions)#, enable_enterprise_modules=True)
 
 def gastos(data, flow, moneda, date_range):
+    data = data[data.destino.isin(cuentas_gastos)].reset_index(drop=True).copy()
+    
     fig = go.Figure(data=[
-          go.Bar(name='FOPEX', x=flow.index, y=flow.FOPEX),
-          go.Bar(name='OPEX', x=flow.index, y=flow.OPEX),
-          go.Bar(name='Hardware', x=flow.index, y=flow.Hardware),
-          go.Bar(name='CAPEX', x=flow.index, y=flow.CAPEX),
-          go.Bar(name='Otros gastos', x=flow.index, y=flow.Otros_gastos),
+          go.Bar(name=cuenta, x=flow.index, y=flow[cuenta], hoverinfo='text', text=['Total: ${:,.0f} <br>{}: ${:,.0f}'.format(total, cuenta, cat) for total, cat in zip(flow.Outflows, flow[cuenta])])
+            for cuenta in ['FOPEX','OPEX','Hardware','CAPEX','Otros_gastos']
     ])
     
     fig.add_trace(
         go.Scatter(
             x=flow.index,
             y=flow.MA,
+            hoverinfo='text',
+            line_color='darkorange',
+            text=['MA: ${:,.0f}'.format(ma) for ma in flow.MA],
             name='MA'
         )
     )
 
-    fig.update_layout(barmode='stack', title='<b>Gastos Mensuales</b>')#, height=500)
+    fig.update_layout(barmode='stack', title='<b>Gastos Mensuales por Categoría</b>')#, height=500)
+    fig.update_yaxes(title_text=moneda.upper())
+    st.plotly_chart(fig, use_container_width=True)
+
+    proyectos = get_proyectos(data)
+    fig = go.Figure(data=[
+                      go.Bar(name=col,
+                      x=proyectos.flow.index,
+                      y=proyectos.flow[col],
+                      hoverinfo='text',
+                      text=['Total: ${:,.0f} <br>{}: ${:,.0f}'.format(total, col, cat) for total, cat in zip(proyectos.flow.Outflows, proyectos.flow[col])]) for col in proyectos.names
+                     ])
+    fig.add_trace(
+        go.Scatter(
+            x=proyectos.flow.index,
+            y=proyectos.flow.MA,
+            hoverinfo='text',
+            line_color='darkorange',
+            text=['MA: ${:,.0f}'.format(ma) for ma in proyectos.flow.MA],
+            name='MA'
+        )
+    )
+
+    fig.update_layout(barmode='stack')
+    fig.update_layout(title='<b>Gastos Mensuales por Destino</b>')
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig, use_container_width=True)
 
@@ -299,23 +328,17 @@ def gastos(data, flow, moneda, date_range):
         components.html(pivot.read(), width=900, height=1000, scrolling=True)
 
     st.title('Proyectos')
-    
-    format = 'MM/YY'
-    cols1,_ = st.columns((1,2))
-    
-    #with cols1:
-    #    date_range = st.slider('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), months[-1]), max_value=months[-1], format=format)
-    #    date_range = st.date_input('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), months[-1]), max_value=months[-1])
+    st.write('Para el período ' + str(date_range[0]) + ' - ' + str(date_range[1]))
         
     with st.expander('Proyectos'):
         proyectos = ['Todos'] + list(set(data.proyecto))
-        proyectos.remove('Global')
+        #proyectos.remove('Global')
 
         proyectos_elegidos = st.multiselect('', proyectos, ['Todos'])
         if 'Todos' in proyectos_elegidos:
             proyectos_elegidos = proyectos
 
-    data['month'] = data.month.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
+    #data['month'] = data.month.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
     data_proyectos = data[
                             (data.fecha.between(date_range[0], date_range[1])) &
                             (data.proyecto.isin(proyectos_elegidos))
@@ -323,29 +346,33 @@ def gastos(data, flow, moneda, date_range):
 
     proyectos = get_proyectos(data_proyectos)
 
-    subproyectos = st.checkbox(label='Visualizar Sub Proyectos')
-    if subproyectos:
-        fig = go.Figure()
-        i=0
+    # subproyectos = st.checkbox(label='Visualizar Sub Proyectos')
+    # if subproyectos:
+    #     fig = go.Figure()
+    #     i=0
 
-        for proyecto in proyectos.names:
-            for sub_proyecto in proyectos.proyectos[proyecto].sub_proyectos:
-                fig.add_trace(
-                go.Scatter(
-                    x=proyectos.proyectos[proyecto].stock.index,
-                    y=proyectos.proyectos[proyecto].stock[sub_proyecto],
-                    name=sub_proyecto + ' ' + proyecto,
-                    stackgroup='one',
-                    line_color=colores[ i % len(colores) ]
-                )
-            )
-            i+=1
+    #     for proyecto in proyectos.names:
+    #         for sub_proyecto in proyectos.proyectos[proyecto].sub_proyectos:
+    #             fig.add_trace(
+    #             go.Scatter(
+    #                 x=proyectos.proyectos[proyecto].stock.index,
+    #                 y=proyectos.proyectos[proyecto].stock[sub_proyecto],
+    #                 name=sub_proyecto + ' ' + proyecto,
+    #                 stackgroup='one',
+    #                 line_color=colores[ i % len(colores) ]
+    #             )
+    #         )
+    #         i+=1
+    # else:
+    #     fig = go.Figure(
+    #         data = [go.Scatter(name=proyecto, x=proyectos.stock.index, y=proyectos.stock[proyecto], stackgroup='one') for proyecto in proyectos.names]        
+    #     )
+    
+    fig = go.Figure(data=[
+                      go.Bar(name=col, x=proyectos.flow.index, y=proyectos.flow[col]) for col in proyectos.names
+                     ])
 
-    else:
-
-        fig = go.Figure(
-            data = [go.Scatter(name=proyecto, x=proyectos.stock.index, y=proyectos.stock[proyecto], stackgroup='one') for proyecto in proyectos.names]        
-        )
+    fig.update_layout(barmode='stack')
     
     fig.update_layout(title='<b>Evolución de Proyectos</b>')
     fig.update_yaxes(title_text=moneda.upper())
@@ -358,31 +385,19 @@ def gastos(data, flow, moneda, date_range):
                 'comprobante','site']]
     tmp[nombre] = tmp[nombre].map('${:,.2f}'.format)
 
-    st.subheader('Datos Seleccionados')
-
-    gb = GridOptionsBuilder.from_dataframe(tmp)
-    gb.configure_pagination()
-    gb.configure_side_bar()
-    gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc='sum', editable=True)
-    gridOptions = gb.build()
-    
-    #gridOptions['columnDefs'] = [{'field':col, 'pivot':True, 'value':True} if col in ['categoria','sub_categoria_1'] else \
-    #    {'field':col, 'pivot':False, 'value':True} for col in mayor.columns]
-    AgGrid(tmp, gridOptions = gridOptions)#, enable_enterprise_modules=True)
-
     st.subheader('Treemaps')
 
     with st.form(key = 'Form'):
         campos1 = st.multiselect(
             'Campos Gráfico 1 (el orden importa)',
-            ['Categoria','Proyecto','Sub_proyecto','Sistema','Destino'],
-            ['Proyecto','Sub_proyecto','Categoria'])
+            ['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto','Sistema','Destino','Cuenta'],
+            ['Proyecto','Sub_proyecto','Categoria', 'Sub_categoria_1', 'Cuenta'])
         
         campos1 = list(map(str.lower, campos1))
 
         campos2 = st.multiselect(
-            'Campos Gráfico 2 (el orden importa)', options=['Categoria','Proyecto','Sub_proyecto','Sistema','Destino'],
-            default=['Categoria','Proyecto','Sub_proyecto'])
+            'Campos Gráfico 2 (el orden importa)', options=['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto','Sistema','Destino','Cuenta'],
+            default=['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto','Cuenta'])
         
         campos2 = list(map(str.lower, campos2))
 
@@ -394,33 +409,25 @@ def gastos(data, flow, moneda, date_range):
         fig = px.treemap(data_proyectos, path=[px.Constant("Todos")] + campos1, values=moneda)
         fig.update_traces(root_color="lightgrey")
         fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
+        fig.data[0].textinfo = 'label+text+value'
         st.subheader( ' --> '.join(map(str.title, campos1)) )
         st.plotly_chart(fig, use_container_width=True)
 
         fig = px.treemap(data_proyectos, path=[px.Constant("Todos")] + campos2, values=moneda)
         fig.update_traces(root_color="lightgrey")
         fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
+        fig.data[0].textinfo = 'label+text+value'
         st.subheader( ' --> '.join(map(str.title, campos2)) )
         st.plotly_chart(fig, use_container_width=True)
 
-        # pivot = pivot_ui(
-        #     data_proyectos[[
-        #         'categoria',
-        #         'sub_categoria_1',
-        #         'proyecto',
-        #         'sub_proyecto',
-        #         'sistema',
-        #         'destino',
-        #         'cuenta',
-        #         'detalle',
-        #         'usd'
-        #     ]],
-        #     rows=['proyecto','sub_proyecto'],
-        #     cols=['categoria'],
-        #     vals=['usd'],
-        #     aggregatorName='Sum',
-        #     outfile_path='/tmp/pivottablejs.html'
-        #     )
-        # st.subheader('Tabla Resumen')
-        # with open(pivot.src) as pivot:
-        #     components.html(pivot.read(), width=900, height=1000, scrolling=True)
+    st.subheader('Datos Seleccionados')
+
+    gb = GridOptionsBuilder.from_dataframe(tmp)
+    gb.configure_pagination()
+    gb.configure_side_bar()
+    gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc='sum', editable=True)
+    gridOptions = gb.build()
+    
+    #gridOptions['columnDefs'] = [{'field':col, 'pivot':True, 'value':True} if col in ['categoria','sub_categoria_1'] else \
+    #    {'field':col, 'pivot':False, 'value':True} for col in mayor.columns]
+    AgGrid(tmp, gridOptions = gridOptions)#, enable_enterprise_modules=True)
