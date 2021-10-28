@@ -21,7 +21,7 @@ if refresh:
 
 st.sidebar.header("Navegación")
 
-pagina = st.sidebar.radio('Reporte', options=['Principal','Gastos'], index=0)
+pagina = st.sidebar.radio('', options=['Caja','Gastos','Aportes'], index=0)
 st.sidebar.subheader("Parámetros generales")
 
 moneda = st.sidebar.selectbox(
@@ -43,11 +43,15 @@ if devengado:
 else:
   data_aux, flow, stock = utils.filter(data, sites, moneda.lower())
   
-if pagina == 'Principal':
+if pagina == 'Caja':
   st.title("Resumen de Cuentas")
   st.subheader('Estado de Caja')
   utils.caja(data_aux, flow, stock, moneda.lower())
-else:
+elif pagina == 'Gastos':
   st.title('Reporte de Gastos')
   date_range = st.sidebar.date_input('Rango de fechas', min_value=months[0], value=(dt.date(year=2021, month=1, day=1), data_aux.fecha.iloc[-1]), max_value=data_aux.fecha.values[-1])
   utils.gastos(data_aux, flow, moneda.lower(), date_range)
+else:
+  st.title('Aportes')
+  date_range = st.sidebar.date_input('Rango de fechas', min_value=months[0], value=(months[0], data_aux.fecha.iloc[-1]), max_value=data_aux.fecha.values[-1])
+  utils.aportes(data_aux, moneda.lower(), date_range)

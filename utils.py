@@ -439,3 +439,59 @@ def gastos(data, flow, moneda, date_range):
     #gridOptions['columnDefs'] = [{'field':col, 'pivot':True, 'value':True} if col in ['categoria','sub_categoria_1'] else \
     #    {'field':col, 'pivot':False, 'value':True} for col in mayor.columns]
     AgGrid(tmp, gridOptions = gridOptions)#, enable_enterprise_modules=True)
+
+
+
+def aportes(data, moneda, date_range):
+    aportes = data[data.sub_categoria_1 == 'Inyección de Capital'].reset_index(drop=True).copy()
+    aportes.detalle = aportes.detalle.fillna('')
+    aportes = aportes[aportes.cuenta != 'montero incorporated'].reset_index(drop=True)
+    aportes['tranche'] = 'NA'
+    aportes.loc[aportes.detalle.str.contains('22m'), 'tranche'] = '22M'
+    aportes.loc[aportes.detalle.str.contains('30m'), 'tranche'] = '30M'
+
+    st.write('Total Aportes: USD {:,.0f}'.format(aportes.usd.sum()))
+    
+    tabla_aportes = pd.pivot_table(data=aportes, values='usd', index='month', columns='site', aggfunc=sum, fill_value=0)
+    
+    fig = go.Figure(data=[
+                      go.Bar(
+                          name=col,
+                          x=tabla_aportes.index,
+                          y=tabla_aportes[col])
+                          for col in tabla_aportes
+                     ])
+
+
+    fig.update_layout(barmode='stack')
+    
+    fig.update_layout(title='<b>Historial de Aportes</b>')
+    fig.update_yaxes(title_text='USD')
+    st.plotly_chart(fig, use_container_width=True)
+
+
+    pivot = pivot_ui(
+        aportes.loc[
+            aportes.fecha.between(date_range[0], date_range[1]),
+            [
+                'fecha',
+                'destino',
+                'cuenta',
+                'detalle',
+                'tranche',
+                'site',
+                'usd',
+            ]
+        ],
+        rows=['tranche'],
+        cols=['site'],
+        vals=['usd'],
+        aggregatorName='Sum',
+        outfile_path='/tmp/pivottablejs.html'
+        )
+    st.header('Resumen de Aportes')
+    st.write('Para el período ' + str(date_range[0]) + ' - ' + str(date_range[1]))
+    with open(pivot.src) as pivot:
+        components.html(pivot.read(), width=900, height=1000, scrolling=True)
+
+
