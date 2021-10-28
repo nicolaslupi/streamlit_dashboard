@@ -283,11 +283,12 @@ def gastos(data, flow, moneda, date_range):
 
     proyectos = get_proyectos(data)
     fig = go.Figure(data=[
-                      go.Bar(name=col,
-                      x=proyectos.flow.index,
-                      y=proyectos.flow[col],
-                      hoverinfo='text',
-                      text=['Total: ${:,.0f} <br>{}: ${:,.0f}'.format(total, col, cat) for total, cat in zip(proyectos.flow.Outflows, proyectos.flow[col])]) for col in proyectos.names
+                      go.Bar(
+                          name=col,
+                          x=proyectos.flow.index,
+                          y=proyectos.flow[col],
+                          hoverinfo='text',
+                          text=['Total: ${:,.0f} <br>{}: ${:,.0f}'.format(total, col, cat) for total, cat in zip(proyectos.flow.Outflows, proyectos.flow[col])]) for col in proyectos.names
                      ])
     fig.add_trace(
         go.Scatter(
@@ -369,8 +370,15 @@ def gastos(data, flow, moneda, date_range):
     #     )
     
     fig = go.Figure(data=[
-                      go.Bar(name=col, x=proyectos.flow.index, y=proyectos.flow[col]) for col in proyectos.names
+                      go.Bar(
+                          name=col,
+                          x=proyectos.flow.index,
+                          y=proyectos.flow[col],
+                          hoverinfo='text',
+                          text=['Total: ${:,.0f} <br>{}: ${:,.0f}'.format(total, col, cat) for total, cat in zip(proyectos.flow.Outflows, proyectos.flow[col])]) 
+                          for col in proyectos.names
                      ])
+
 
     fig.update_layout(barmode='stack')
     
