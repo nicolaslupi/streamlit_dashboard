@@ -408,11 +408,9 @@ def gastos(data, flow, moneda, date_range):
     
     if submitted:
         data_proyectos = data_proyectos[
-                            (data.proyecto.isin(proyectos_elegidos))
+                            (data_proyectos.proyecto.isin(proyectos_elegidos))
                         ].sort_values(['fecha','id']).reset_index(drop=True).copy()
 
-        #proyectos = get_proyectos(data_proyectos)
-        
         data_proyectos[moneda] = data_proyectos[moneda].round(decimals=2)
         
         fig = px.treemap(data_proyectos, path=[px.Constant("Todos")] + campos1, values=moneda)
