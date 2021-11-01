@@ -80,12 +80,13 @@ def get(data, cuenta, moneda):
 
 class Proyecto():
   def __init__(self, data, months):
-    self.sub_proyectos = set(data.sub_proyecto)
+    
+    self.sub_proyectos = set(data.sub_proyecto_1)
     self.flow = pd.DataFrame(index=months)
     flow_aux = pd.DataFrame(index=pd.unique(data.month))
-    sumas = pd.pivot_table( data, values='usd', index='month', columns=['sub_proyecto','destino'], aggfunc=sum, fill_value=0 )
-    restas = pd.pivot_table( data, values='usd', index='month', columns=['sub_proyecto','origen'], aggfunc=sum, fill_value=0 )
-    restas.columns.names = ['sub_proyecto','destino']
+    sumas = pd.pivot_table( data, values='usd', index='month', columns=['sub_proyecto_1','destino'], aggfunc=sum, fill_value=0 )
+    restas = pd.pivot_table( data, values='usd', index='month', columns=['sub_proyecto_1','origen'], aggfunc=sum, fill_value=0 )
+    restas.columns.names = ['sub_proyecto_1','destino']
     tmp = sumas.sub(restas, axis=1, fill_value=0)
     flow_aux[list(self.sub_proyectos)]  = np.array([tmp[sub_proyecto][set(tmp[sub_proyecto].columns)&cuentas_gastos].sum(axis=1) for sub_proyecto in self.sub_proyectos]).transpose()
     self.flow = self.flow.join(flow_aux).fillna(0)
@@ -311,14 +312,14 @@ def gastos(data, flow, moneda, date_range):
             'categoria',
             'sub_categoria_1',
             'proyecto',
-            'sub_proyecto',
+            'sub_proyecto_1',
             'sistema',
             'destino',
             'cuenta',
             'detalle',
             'usd'
         ]],
-        rows=['proyecto','sub_proyecto','categoria'],
+        rows=['proyecto','sub_proyecto_1','categoria'],
         #cols=['categoria'],
         vals=['usd'],
         aggregatorName='Sum',
@@ -393,14 +394,15 @@ def gastos(data, flow, moneda, date_range):
         
         campos1 = st.multiselect(
             'Campos Gráfico 1 (el orden importa)',
-            ['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto','Sistema','Destino','Cuenta'],
-            ['Proyecto','Sub_proyecto','Categoria', 'Sub_categoria_1', 'Cuenta'])
+            ['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto_1','Sub_proyecto_2','Sub_proyecto_3','Sistema','Destino','Cuenta'],
+            ['Proyecto','Sub_proyecto_1','Categoria', 'Sub_categoria_1', 'Cuenta'])
         
         campos1 = list(map(str.lower, campos1))
 
         campos2 = st.multiselect(
-            'Campos Gráfico 2 (el orden importa)', options=['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto','Sistema','Destino','Cuenta'],
-            default=['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto','Cuenta'])
+            'Campos Gráfico 2 (el orden importa)',
+            options=['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto_1','Sub_proyecto_2','Sub_proyecto_3','Sistema','Destino','Cuenta'],
+            default=['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto_1','Cuenta'])
         
         campos2 = list(map(str.lower, campos2))
 
@@ -432,7 +434,7 @@ def gastos(data, flow, moneda, date_range):
     tmp = data_proyectos[::-1].fillna('').copy()
     nombre = 'gasto (' + moneda + ')'
     tmp[nombre] = tmp[moneda]
-    tmp = tmp[['id','fecha',nombre,'categoria','sub_categoria_1','sub_categoria_2','proyecto','sub_proyecto','sistema','cuenta','proveedor','detalle',
+    tmp = tmp[['id','fecha',nombre,'categoria','sub_categoria_1','sub_categoria_2','proyecto','sub_proyecto_1','sistema','cuenta','proveedor','detalle',
                 'comprobante','site']]
     tmp[nombre] = tmp[nombre].map('${:,.2f}'.format)
     
@@ -499,5 +501,3 @@ def aportes(data, moneda, date_range):
     st.write('Para el período ' + str(date_range[0]) + ' - ' + str(date_range[1]))
     with open(pivot.src) as pivot:
         components.html(pivot.read(), width=900, height=1000, scrolling=True)
-
-
