@@ -331,18 +331,12 @@ def gastos(data, flow, moneda, date_range):
     st.title('Proyectos')
     st.write('Para el período ' + str(date_range[0]) + ' - ' + str(date_range[1]))
         
-    with st.expander('Proyectos'):
-        proyectos = ['Todos'] + list(set(data.proyecto))
-        #proyectos.remove('Global')
-
-        proyectos_elegidos = st.multiselect('', proyectos, ['Todos'])
-        if 'Todos' in proyectos_elegidos:
-            proyectos_elegidos = proyectos
+    
 
     #data['month'] = data.month.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
     data_proyectos = data[
-                            (data.fecha.between(date_range[0], date_range[1])) &
-                            (data.proyecto.isin(proyectos_elegidos))
+                            (data.fecha.between(date_range[0], date_range[1]))
+                            #(data.proyecto.isin(proyectos_elegidos))
                         ].sort_values(['fecha','id']).reset_index(drop=True).copy()
 
     proyectos = get_proyectos(data_proyectos)
@@ -386,16 +380,17 @@ def gastos(data, flow, moneda, date_range):
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig, use_container_width=True)
 
-    tmp = data_proyectos[::-1].fillna('').copy()
-    nombre = 'gasto (' + moneda + ')'
-    tmp[nombre] = tmp[moneda]
-    tmp = tmp[['id','fecha',nombre,'categoria','sub_categoria_1','sub_categoria_2','proyecto','sub_proyecto','sistema','cuenta','proveedor','detalle',
-                'comprobante','site']]
-    tmp[nombre] = tmp[nombre].map('${:,.2f}'.format)
-
+    
     st.subheader('Treemaps')
 
     with st.form(key = 'Form'):
+        #with st.expander('Proyectos'):
+        proyectos = ['Todos'] + list(set(data.proyecto))
+        
+        proyectos_elegidos = st.multiselect('Proyectos Elegidos', proyectos, ['Todos'])
+        if 'Todos' in proyectos_elegidos:
+            proyectos_elegidos = proyectos
+        
         campos1 = st.multiselect(
             'Campos Gráfico 1 (el orden importa)',
             ['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto','Sistema','Destino','Cuenta'],
@@ -412,6 +407,12 @@ def gastos(data, flow, moneda, date_range):
         submitted = st.form_submit_button(label = 'Submit')
     
     if submitted:
+        data_proyectos = data_proyectos[
+                            (data.proyecto.isin(proyectos_elegidos))
+                        ].sort_values(['fecha','id']).reset_index(drop=True).copy()
+
+        #proyectos = get_proyectos(data_proyectos)
+        
         data_proyectos[moneda] = data_proyectos[moneda].round(decimals=2)
         
         fig = px.treemap(data_proyectos, path=[px.Constant("Todos")] + campos1, values=moneda)
@@ -430,6 +431,13 @@ def gastos(data, flow, moneda, date_range):
 
     st.subheader('Datos Seleccionados')
 
+    tmp = data_proyectos[::-1].fillna('').copy()
+    nombre = 'gasto (' + moneda + ')'
+    tmp[nombre] = tmp[moneda]
+    tmp = tmp[['id','fecha',nombre,'categoria','sub_categoria_1','sub_categoria_2','proyecto','sub_proyecto','sistema','cuenta','proveedor','detalle',
+                'comprobante','site']]
+    tmp[nombre] = tmp[nombre].map('${:,.2f}'.format)
+    
     gb = GridOptionsBuilder.from_dataframe(tmp)
     gb.configure_pagination()
     gb.configure_side_bar()
