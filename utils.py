@@ -263,9 +263,14 @@ def gastos(data, flow, moneda, date_range):
     data = data[data.destino.isin(cuentas_gastos)].reset_index(drop=True).copy()
     
     fig = go.Figure(data=[
-          go.Bar(name=cuenta, x=flow.index, y=flow[cuenta], hoverinfo='text', text=['Total: ${:,.0f} <br>{}: ${:,.0f}'.format(total, cuenta, cat) for total, cat in zip(flow.Outflows, flow[cuenta])])
-            for cuenta in ['FOPEX','OPEX','Hardware','CAPEX','Otros_gastos']
-    ])
+                        go.Bar(
+                            name=cuenta,
+                            x=flow.index,
+                            y=flow[cuenta],
+                            hoverinfo='text',
+                            text=['{}<br>Total: ${:,.0f} <br>{}: ${:,.0f}'.format(date.strftime('%b-%Y'), total, cuenta, cat) for date, total, cat in zip(flow.index, flow.Outflows, flow[cuenta])])
+                            for cuenta in ['FOPEX','OPEX','Hardware','CAPEX','Otros_gastos']
+                    ])
     
     fig.add_trace(
         go.Scatter(
@@ -273,7 +278,7 @@ def gastos(data, flow, moneda, date_range):
             y=flow.MA,
             hoverinfo='text',
             line_color='darkorange',
-            text=['MA: ${:,.0f}'.format(ma) for ma in flow.MA],
+            text=['{}<br>MA: ${:,.0f}'.format(date.strftime('%b-%Y'), ma) for date, ma in zip(flow.index, flow.MA)],
             name='MA'
         )
     )
@@ -289,7 +294,7 @@ def gastos(data, flow, moneda, date_range):
                           x=proyectos.flow.index,
                           y=proyectos.flow[col],
                           hoverinfo='text',
-                          text=['Total: ${:,.0f} <br>{}: ${:,.0f}'.format(total, col, cat) for total, cat in zip(proyectos.flow.Outflows, proyectos.flow[col])]) for col in proyectos.names
+                          text=['{}<br>Total: ${:,.0f} <br>{}: ${:,.0f}'.format(date.strftime('%b-%Y'), total, col, cat) for date, total, cat in zip(proyectos.flow.index, proyectos.flow.Outflows, proyectos.flow[col])]) for col in proyectos.names
                      ])
     fig.add_trace(
         go.Scatter(
@@ -297,7 +302,7 @@ def gastos(data, flow, moneda, date_range):
             y=proyectos.flow.MA,
             hoverinfo='text',
             line_color='darkorange',
-            text=['MA: ${:,.0f}'.format(ma) for ma in proyectos.flow.MA],
+            text=['{}<br>MA: ${:,.0f}'.format(date.strftime('%b-%Y'), ma) for date, ma in zip(proyectos.flow.index, proyectos.flow.MA)],
             name='MA'
         )
     )
@@ -308,11 +313,14 @@ def gastos(data, flow, moneda, date_range):
     st.plotly_chart(fig, use_container_width=True)
 
     pivot = pivot_ui(
-        data[[
-            'categoria',
+        data.loc[
+            data.fecha.between(date_range[0], date_range[1]),
+            ['categoria',
             'sub_categoria_1',
             'proyecto',
             'sub_proyecto_1',
+            'sub_proyecto_2',
+            'sub_proyecto_3',
             'sistema',
             'destino',
             'cuenta',
@@ -325,7 +333,8 @@ def gastos(data, flow, moneda, date_range):
         aggregatorName='Sum',
         outfile_path='/tmp/pivottablejs.html'
         )
-    st.header('Tabla Resumen')
+    st.title('Tabla Resumen')
+    st.write('Para el período ' + str(date_range[0]) + ' - ' + str(date_range[1]))
     with open(pivot.src) as pivot:
         components.html(pivot.read(), width=900, height=1000, scrolling=True)
 
@@ -370,7 +379,7 @@ def gastos(data, flow, moneda, date_range):
                           x=proyectos.flow.index,
                           y=proyectos.flow[col],
                           hoverinfo='text',
-                          text=['Total: ${:,.0f} <br>{}: ${:,.0f}'.format(total, col, cat) for total, cat in zip(proyectos.flow.Outflows, proyectos.flow[col])]) 
+                          text=['{}<br>Total: ${:,.0f} <br>{}: ${:,.0f}'.format(date.strftime('%b-%Y'), total, col, cat) for date, total, cat in zip(proyectos.flow.index, proyectos.flow.Outflows, proyectos.flow[col])]) 
                           for col in proyectos.names
                      ])
 
