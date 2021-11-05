@@ -105,7 +105,7 @@ class Proyectos():
     self.flow['Outflows'] = self.flow.sum(axis=1)
     self.stock = self.flow.cumsum()
     self.flow['MA'] = self.flow['Outflows'].rolling(window=3).mean()
-    self.flow.iloc[-1,-1] = self.flow.iloc[-2,-1]
+    #self.flow.iloc[-1,-1] = self.flow.iloc[-2,-1]
 
     self.proyectos = {proyecto: Proyecto(data[data.proyecto==proyecto], pd.unique(data.month)) for proyecto in self.names } 
 
