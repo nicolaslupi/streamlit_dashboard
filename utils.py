@@ -19,6 +19,7 @@ Caja = set(['caja ars','caja usd','ml','banco','electronica','estructuras','prop
 Transferencias = set(['epic'])
 Aportes = set(['aportes','montero'])
 Deudas = set(['cuentas a pagar'])
+Mission_costs = set(['rideshare costs'])
 OPEX = set(['transporte','consumibles generales','consumibles de oficina','consumibles de ensayos',
             'consumibles para produccion de propelente',])
 Otros_gastos = set(['impuestos','legal','variacion de inventario','otros gastos varios','perdida por tc','perdida por arqueo'])
@@ -28,8 +29,8 @@ CAPEX = set(['herramientas','materiales','infraestructura','mano de obra','rodad
 general_rd = set(['propulsion r&d','electronics r&d'])
 Hardware = set(['test equipment','vehicle r&d','propellant production hardware']).union(general_rd)
 
-cuentas_gastos = OPEX.union(Otros_gastos, FOPEX, CAPEX, Hardware)
-activo = Caja.union(OPEX, Otros_gastos, FOPEX, CAPEX, Hardware, Transferencias)
+cuentas_gastos = OPEX.union(Mission_costs, Otros_gastos, FOPEX, CAPEX, Hardware)
+activo = Caja.union(Mission_costs, OPEX, Otros_gastos, FOPEX, CAPEX, Hardware, Transferencias)
 pasivo = Aportes.union(Deudas, Otros_ingresos)
 
 def normalize(s):
@@ -147,13 +148,14 @@ def filter(data, sites, moneda):
            axis=1, fill_value=0)
 
     flow['Caja'] = flow[set(flow.columns)&Caja].sum(axis=1)
+    flow['Mission_costs'] = flow[set(flow.columns)&Mission_costs].sum(axis=1)
     flow['FOPEX'] = flow[set(flow.columns)&FOPEX].sum(axis=1)
     flow['OPEX'] = flow[set(flow.columns)&OPEX].sum(axis=1)
     flow['CAPEX'] = flow[set(flow.columns)&CAPEX].sum(axis=1)
     flow['Hardware'] = flow[set(flow.columns)&Hardware].sum(axis=1)
     flow['Otros_gastos'] = flow[set(flow.columns)&Otros_gastos].sum(axis=1)
 
-    flow['Outflows'] = flow[['FOPEX','OPEX','CAPEX','Hardware','Otros_gastos']].sum(axis=1)
+    flow['Outflows'] = flow[['Mission_costs','FOPEX','OPEX','CAPEX','Hardware','Otros_gastos']].sum(axis=1)
     
     stock = flow.cumsum()
     
@@ -269,7 +271,7 @@ def gastos(data, flow, moneda, date_range):
                             y=flow[cuenta],
                             hoverinfo='text',
                             text=['{}<br>Total: ${:,.0f} <br>{}: ${:,.0f}'.format(date.strftime('%b-%Y'), total, cuenta, cat) for date, total, cat in zip(flow.index, flow.Outflows, flow[cuenta])])
-                            for cuenta in ['FOPEX','OPEX','Hardware','CAPEX','Otros_gastos']
+                            for cuenta in ['Mission_costs','FOPEX','OPEX','Hardware','CAPEX','Otros_gastos']
                     ])
     
     fig.add_trace(
@@ -466,6 +468,7 @@ def aportes(data, moneda, date_range):
     aportes['tranche'] = 'NA'
     aportes.loc[aportes.detalle.str.contains('22m'), 'tranche'] = '22M'
     aportes.loc[aportes.detalle.str.contains('30m'), 'tranche'] = '30M'
+    aportes.loc[aportes.detalle.str.contains('40m'), 'tranche'] = '40M'
 
     st.write('Total Aportes: USD {:,.0f}'.format(aportes.usd.sum()))
     
