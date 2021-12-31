@@ -25,7 +25,7 @@ OPEX = set(['transporte','consumibles generales','consumibles de oficina','consu
 Otros_gastos = set(['impuestos','legal','variacion de inventario','otros gastos varios','perdida por tc','perdida por arqueo'])
 Otros_ingresos = set(['ganancia por tc','ganancia por arqueo','otros ingresos varios'])
 FOPEX = set(['sg&a salaries','tech salaries','suscripciones','alquiler'])
-CAPEX = set(['herramientas','materiales','infraestructura','mano de obra','rodados','equipo de oficina'])
+CAPEX = set(['herramientas','materiales','infraestructura','utilaje','mano de obra','rodados','equipo de oficina'])
 general_rd = set(['propulsion r&d','electronics r&d'])
 Hardware = set(['test equipment','vehicle r&d','propellant production hardware']).union(general_rd)
 
