@@ -27,7 +27,7 @@ Otros_ingresos = set(['ganancia por tc','ganancia por arqueo','otros ingresos va
 FOPEX = set(['sg&a salaries','tech salaries','suscripciones','alquiler'])
 CAPEX = set(['herramientas','materiales','infraestructura','utilaje','mano de obra','rodados','equipo de oficina'])
 general_rd = set(['propulsion r&d','electronics r&d'])
-Hardware = set(['test equipment','vehicle r&d','propellant production hardware']).union(general_rd)
+Hardware = set(['test equipment','vehicle r&d', 'vehicle development', 'flight tugs', 'propellant production hardware']).union(general_rd)
 
 cuentas_gastos = OPEX.union(Mission_costs, Otros_gastos, FOPEX, CAPEX, Hardware)
 activo = Caja.union(Mission_costs, OPEX, Otros_gastos, FOPEX, CAPEX, Hardware, Transferencias)
