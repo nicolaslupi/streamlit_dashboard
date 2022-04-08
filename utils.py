@@ -111,15 +111,14 @@ class Proyectos():
     self.proyectos = {proyecto: Proyecto(data[data.proyecto==proyecto], pd.unique(data.month)) for proyecto in self.names } 
 
 @st.cache(allow_output_mutation=True)
-def load_data():
-    filename = 'data.xlsx'
+def load_data(url, filename):
     if os.path.exists(filename):
         os.remove(filename)
-    wget.download('https://drive.google.com/uc?export=download&id=1Bji9YatH0J5vEtOzSvCmv23lS92rDPuP', 'data.xlsx')
+    wget.download(url, filename)
 
-    data = pd.read_excel('data.xlsx', sheet_name='Input', header=2)
+    data = pd.read_excel(filename, sheet_name='Input', header=2)
     data['site'] = 'Epic'
-    data_us = pd.read_excel('data.xlsx', sheet_name='Input US', header=2)
+    data_us = pd.read_excel(filename, sheet_name='Input US', header=2)
     data_us['site'] = 'Montero'
 
     data = data.append(data_us, ignore_index=True).sort_values(['Fecha','Id']).reset_index(drop=True)
