@@ -176,6 +176,8 @@ def caja(data, flow, stock, moneda):
 
     st.write('Saldo actual:', moneda.upper(), '{:,.2f}'.format(stock.tail(1)[cuenta].values[0]))
 
+    ## Estado de Caja
+    
     fig = go.Figure()
 
     fig.add_trace(
@@ -198,16 +200,30 @@ def caja(data, flow, stock, moneda):
     fig.update_layout(title='<b>Estado de Caja</b>')
     st.plotly_chart(fig, use_container_width=True)
 
+    ## Burn & Runway
     
-    st.write('Burn actual:', moneda.upper(), '{:,.0f} por mes'.format(flow.tail(1)['MA'].values[0]))
-    st.write('Runway: {:,.0f} meses'.format((stock.tail(1)['Caja'] / flow.tail(1)['MA']).values[0]))
+    st.subheader('Burn & Runway')
+    cost_names = ['Mission_costs','FOPEX','OPEX','CAPEX','Hardware','Otros_gastos']
+    cuentas_elegidas = st.multiselect('Cuentas para Burn', cost_names, ['Todos'])
+    
+    aux_flow = flow.copy()
+    
+    if 'Todos' in cuentas_elegidas:
+        cuentas_elegidas = cost_names
+    else:
+        aux_flow.Outflows = aux_flow[cuentas_elegidas].sum(axis=1)
+        aux_flow.MA = aux_flow.Outflows.rolling(window=3).mean()
+        aux_flow.iloc[-1,-1] = aux_flow.iloc[-2,-1]
+
+    st.write('Burn actual:', moneda.upper(), '{:,.0f} por mes'.format(aux_flow.tail(1)['MA'].values[0]))
+    st.write('Runway: {:,.0f} meses'.format((stock.tail(1)['Caja'] / aux_flow.tail(1)['MA']).values[0]))
 
     fig = make_subplots( specs = [[{'secondary_y':True}]] )
 
     fig.add_trace(
         go.Scatter(
-            x=flow.index,
-            y=flow.MA,
+            x=aux_flow.index,
+            y=aux_flow.MA,
             name='Burn'
         ),
         secondary_y=False
@@ -215,8 +231,8 @@ def caja(data, flow, stock, moneda):
 
     fig.add_trace(
         go.Scatter(
-            x=flow.index,
-            y=stock.Caja / flow.MA,
+            x=aux_flow.index,
+            y=stock.Caja / aux_flow.MA,
             name='Runway'
         ),
         secondary_y=True
@@ -325,6 +341,7 @@ def gastos(data, flow, moneda, date_range):
             'sistema',
             'destino',
             'cuenta',
+            'proveedor',
             'detalle',
             'usd'
         ]],
