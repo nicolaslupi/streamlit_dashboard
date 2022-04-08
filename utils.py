@@ -404,14 +404,14 @@ def gastos(data, flow, moneda, date_range):
         
         campos1 = st.multiselect(
             'Campos Gráfico 1 (el orden importa)',
-            ['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto_1','Sub_proyecto_2','Sub_proyecto_3','Sistema','Destino','Cuenta'],
+            ['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto_1','Sub_proyecto_2','Sub_proyecto_3','Sistema','Destino','Cuenta','Proveedor'],
             ['Proyecto','Sub_proyecto_1','Categoria', 'Sub_categoria_1', 'Cuenta'])
         
         campos1 = list(map(str.lower, campos1))
 
         campos2 = st.multiselect(
             'Campos Gráfico 2 (el orden importa)',
-            options=['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto_1','Sub_proyecto_2','Sub_proyecto_3','Sistema','Destino','Cuenta'],
+            options=['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto_1','Sub_proyecto_2','Sub_proyecto_3','Sistema','Destino','Cuenta','Proveedor'],
             default=['Categoria','Sub_categoria_1','Proyecto','Sub_proyecto_1','Cuenta'])
         
         campos2 = list(map(str.lower, campos2))
