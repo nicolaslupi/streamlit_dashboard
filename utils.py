@@ -567,7 +567,7 @@ def aportes(data, moneda, date_range):
         components.html(pivot.read(), width=900, height=1000, scrolling=True)
 
 
-#%% PLANTILLA
+#%% EQUIPO
 
 def equipo(data, teams, moneda, date_range):
     payroll = pd.concat([data[data.sub_categoria_1.str.contains('Sala')].groupby('month').usd.sum(),

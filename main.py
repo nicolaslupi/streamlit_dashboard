@@ -28,7 +28,7 @@ if refresh:
 
 st.sidebar.header("Navegación")
 
-pagina = st.sidebar.radio('', options=['Caja','Gastos','Aportes','Plantilla'], index=0)
+pagina = st.sidebar.radio('', options=['Caja','Gastos','Aportes','Equipo'], index=0)
 st.sidebar.subheader("Parámetros generales")
 
 moneda = st.sidebar.selectbox(
