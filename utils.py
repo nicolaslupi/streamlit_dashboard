@@ -569,7 +569,7 @@ def aportes(data, moneda, date_range):
 
 #%% PLANTILLA
 
-def plantilla(data, teams, moneda, date_range):
+def equipo(data, teams, moneda, date_range):
     payroll = pd.concat([data[data.sub_categoria_1.str.contains('Sala')].groupby('month').usd.sum(),
                      teams.sum(axis=1)], axis=1)
     payroll.columns = ['Payroll', 'Team Size']
@@ -595,5 +595,5 @@ def plantilla(data, teams, moneda, date_range):
 
     fig.update_yaxes(title_text="US$ per month", secondary_y=False)
     fig.update_yaxes(title_text="Team Size", secondary_y=True)
-    fig.update_layout(title='<b>Payroll y Plantilla</b>')
+    fig.update_layout(title='<b>Payroll y Equipo</b>')
     st.plotly_chart(fig, use_container_width=True)
