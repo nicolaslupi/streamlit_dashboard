@@ -65,4 +65,4 @@ elif pagina == 'Aportes':
 else:
   st.title('Equipo')
   date_range = st.sidebar.date_input('Rango de fechas', min_value=months[0], value=(months[0], data_aux.fecha.iloc[-1]), max_value=data_aux.fecha.values[-1])
-  utils.Equipo(data_aux, teams, moneda.lower(), date_range)
+  utils.equipo(data_aux, teams, moneda.lower(), date_range)
