@@ -140,6 +140,42 @@ def load_data(url, filename):
     return data, data_distr, months, quarters, cuentas
 
 @st.cache(allow_output_mutation=True)
+def load_teams(url, filename):
+    if os.path.exists(filename):
+        os.remove(filename)
+    wget.download(url, filename)
+
+    labor = pd.read_excel(filename, sheet_name='Roles', header=0, index_col=0)
+    labor = labor.transpose()
+    labor.drop(labels=np.nan, axis=1, inplace=True)
+
+    teams = pd.read_excel(filename, sheet_name='Teams', header=0, index_col=0)
+    teams = teams.transpose()
+    teams.drop(labels=np.nan, axis=1, inplace=True)
+
+    # L = pd.DataFrame(labor.sum(axis=1), columns=['L'])
+    # tech = pd.DataFrame(
+    #     labor[labor.columns[~labor.columns.isin(['Management', 'Accounting', 'Media & Sales'])]].sum(axis=1),
+    #     columns=['tech']
+    # )
+    # sga = pd.DataFrame(
+    #     labor[labor.columns[labor.columns.isin(['Management', 'Accounting', 'Media & Sales'])]].sum(axis=1),
+    #     columns=['sga']
+    # )
+
+    # prop_labor = pd.DataFrame(
+    #     labor[['Mech Eng', 'Mech Tech', 'Other Eng', 'Other Tech']].sum(axis=1),
+    #     columns=['prop']
+    # )
+
+    # elec_labor = pd.DataFrame(
+    #     labor[['Elec Eng', 'Elec Tech']].sum(axis=1),
+    #     columns=['elec']
+    # )
+
+    return teams
+
+@st.cache(allow_output_mutation=True)
 def filter(data, sites, moneda):
     data = data[data.site.isin(sites)].reset_index(drop=True)
     flow = pd.pivot_table( data, values=moneda, index='month', columns='destino', aggfunc=sum, fill_value=0).sub( \
@@ -475,7 +511,7 @@ def gastos(data, flow, moneda, date_range):
     #    {'field':col, 'pivot':False, 'value':True} for col in mayor.columns]
     AgGrid(tmp, gridOptions = gridOptions)#, enable_enterprise_modules=True)
 
-
+#%% APORTES
 
 def aportes(data, moneda, date_range):
     aportes = data[data.sub_categoria_1 == 'Inyección de Capital'].reset_index(drop=True).copy()
@@ -529,3 +565,35 @@ def aportes(data, moneda, date_range):
     st.write('Para el período ' + str(date_range[0]) + ' - ' + str(date_range[1]))
     with open(pivot.src) as pivot:
         components.html(pivot.read(), width=900, height=1000, scrolling=True)
+
+
+#%% PLANTILLA
+
+def plantilla(data, teams, moneda, date_range):
+    payroll = pd.concat([data[data.sub_categoria_1.str.contains('Sala')].groupby('month').usd.sum(),
+                     teams.sum(axis=1)], axis=1)
+    payroll.columns = ['Payroll', 'Team Size']
+    fig = make_subplots( specs = [[{'secondary_y':True}]] )
+
+    fig.add_trace(
+        go.Bar(
+            x=payroll.index,
+            y=payroll.Payroll,
+            name='Payroll (left)'
+        ),
+        secondary_y=False
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=payroll.index,
+            y=payroll['Team Size'],
+            name='Team Size (right)'
+        ),
+        secondary_y=True
+    )
+
+    fig.update_yaxes(title_text="US$ per month", secondary_y=False)
+    fig.update_yaxes(title_text="Team Size", secondary_y=True)
+    fig.update_layout(title='<b>Payroll y Plantilla</b>')
+    st.plotly_chart(fig, use_container_width=True)
