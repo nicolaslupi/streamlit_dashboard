@@ -241,7 +241,7 @@ def caja(data, flow, stock, moneda):
     
     st.subheader('Burn & Runway')
     cost_names = ['Todos','Mission_costs','FOPEX','OPEX','CAPEX','Hardware','Otros_gastos']
-    cuentas_elegidas = st.multiselect('Cuentas para Burn', cost_names, ['Todos'])
+    cuentas_elegidas = st.multiselect('Cuentas para Burn', cost_names, ['FOPEX'])
     
     aux_flow = flow.copy()
     
