@@ -15,11 +15,11 @@ import plotly.express as px
 from pivottablejs import pivot_ui
 
 colores = ['#1f77b4', '#ff7f0e', '#2ca02c','#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-Caja = set(['caja ars','caja usd','ml','banco','electronica','estructuras','propulsion','accounting','sendwyre'])
-Transferencias = set(['epic'])
+Caja = set(['caja ars','caja usd','ml','banco ars','banco usd', 'banco uyu','electronica','estructuras','propulsion','accounting','sendwyre'])
+Transferencias = set(['epic','seuner'])
 Aportes = set(['aportes','montero'])
 Deudas = set(['cuentas a pagar'])
-Mission_costs = set(['rideshare costs'])
+Mission_costs = set(['rideshare costs','other mission costs'])
 OPEX = set(['transporte','consumibles generales','consumibles de oficina','consumibles de ensayos',
             'consumibles para produccion de propelente',])
 Otros_gastos = set(['impuestos','legal','variacion de inventario','otros gastos varios','perdida por tc','perdida por arqueo'])
@@ -117,12 +117,24 @@ def load_data(url, filename):
         os.remove(filename)
     wget.download(url, filename)
 
-    data = pd.read_excel(filename, sheet_name='Input', header=2)
-    data['site'] = 'Epic'
-    data_us = pd.read_excel(filename, sheet_name='Input US', header=2)
-    data_us['site'] = 'Montero'
+    
+    meta = pd.read_excel('data.xlsx', sheet_name='meta', header=None, index_col=0)
+    sheet_names = meta.loc['sheet_names'].values[0].split(',')
+    site_names = meta.loc['site_names'].values[0].split(',')
 
-    data = data.append(data_us, ignore_index=True).sort_values(['Fecha','Id']).reset_index(drop=True)
+
+    datasets = [pd.read_excel('data.xlsx', sheet_name=sheet_name, header=2) for sheet_name in sheet_names]
+    for dataset, site_name in zip(datasets, site_names):
+        dataset['site'] = site_name
+
+    data = pd.concat(datasets, ignore_index=True)
+    
+    # data = pd.read_excel(filename, sheet_name='Input', header=2)
+    # data['site'] = 'Epic'
+    # data_us = pd.read_excel(filename, sheet_name='Input US', header=2)
+    # data_us['site'] = 'Montero'
+
+    # data = data.append(data_us, ignore_index=True).sort_values(['Fecha','Id']).reset_index(drop=True)
     data.columns = [col.lower().replace(' ', '_') for col in data.columns]
     data.drop(['year','month'], axis=1, inplace=True)
     data['month'] = data.fecha.apply(lambda fecha: fecha.replace(day=1))
