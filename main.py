@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit import caching
+#from streamlit import caching
 import utils
 import datetime as dt
 import pandas as pd
@@ -19,7 +19,7 @@ teams = utils.load_teams(url=TEAMS_URL, filename=TEAMS_FILENAME)
 
 refresh = st.sidebar.button('Actualizar Datos', help='Elimina Caché y actualiza datos desde Drive')
 if refresh:
-  caching.clear_cache()
+  #caching.clear_cache()
   data, data_distr, months, quarters, cuentas = utils.load_data(url=DATA_URL, filename=DATA_FILENAME)
   data['fecha'] = data.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
   data_distr['fecha'] = data_distr.fecha.apply(lambda fecha: dt.datetime.date(pd.to_datetime(fecha)))
