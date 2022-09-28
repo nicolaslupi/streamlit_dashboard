@@ -67,7 +67,7 @@ def distribute_over_months(data):
             row.fecha = row.fecha + relativedelta(months=+1)
             rows.append( row.copy() )
             
-    data = data.append( rows )    
+    data = pd.concat([data, pd.DataFrame.from_records(rows)], ignore_index=True)
     data.reset_index(drop=True, inplace=True) 
     data.drop(data[data.fecha >= dt.datetime.today()].index, inplace=True)
     
@@ -90,7 +90,7 @@ class Proyecto():
     restas = pd.pivot_table( data, values='usd', index='month', columns=['sub_proyecto_1','origen'], aggfunc=sum, fill_value=0 )
     restas.columns.names = ['sub_proyecto_1','destino']
     tmp = sumas.sub(restas, axis=1, fill_value=0)
-    flow_aux[list(self.sub_proyectos)]  = np.array([tmp[sub_proyecto][set(tmp[sub_proyecto].columns)&cuentas_gastos].sum(axis=1) for sub_proyecto in self.sub_proyectos]).transpose()
+    flow_aux[list(self.sub_proyectos)]  = np.array([tmp[sub_proyecto][list(set(tmp[sub_proyecto].columns)&cuentas_gastos)].sum(axis=1) for sub_proyecto in self.sub_proyectos]).transpose()
     self.flow = self.flow.join(flow_aux).fillna(0)
     self.stock = self.flow.cumsum()
 
@@ -103,7 +103,7 @@ class Proyectos():
     restas.columns.names = ['proyecto','destino']
     tmp = sumas.sub(restas, axis=1, fill_value=0)
     
-    self.flow[list(self.names)] = np.array([tmp[proyecto][set(tmp[proyecto].columns)&cuentas_gastos].sum(axis=1) for proyecto in self.names]).transpose()
+    self.flow[list(self.names)] = np.array([tmp[proyecto][list(set(tmp[proyecto].columns)&cuentas_gastos)].sum(axis=1) for proyecto in self.names]).transpose()
     self.flow['Outflows'] = self.flow.sum(axis=1)
     self.stock = self.flow.cumsum()
     self.flow['MA'] = self.flow['Outflows'].rolling(window=3).mean()
@@ -129,12 +129,6 @@ def load_data(url, filename):
 
     data = pd.concat(datasets, ignore_index=True)
     
-    # data = pd.read_excel(filename, sheet_name='Input', header=2)
-    # data['site'] = 'Epic'
-    # data_us = pd.read_excel(filename, sheet_name='Input US', header=2)
-    # data_us['site'] = 'Montero'
-
-    # data = data.append(data_us, ignore_index=True).sort_values(['Fecha','Id']).reset_index(drop=True)
     data.columns = [col.lower().replace(' ', '_') for col in data.columns]
     data.drop(['year','month'], axis=1, inplace=True)
     data['month'] = data.fecha.apply(lambda fecha: fecha.replace(day=1))
@@ -195,13 +189,13 @@ def filter(data, sites, moneda):
            pd.pivot_table( data, values=moneda, index='month', columns='origen', aggfunc=sum, fill_value=0), \
            axis=1, fill_value=0)
 
-    flow['Caja'] = flow[set(flow.columns)&Caja].sum(axis=1)
-    flow['Mission_costs'] = flow[set(flow.columns)&Mission_costs].sum(axis=1)
-    flow['FOPEX'] = flow[set(flow.columns)&FOPEX].sum(axis=1)
-    flow['OPEX'] = flow[set(flow.columns)&OPEX].sum(axis=1)
-    flow['CAPEX'] = flow[set(flow.columns)&CAPEX].sum(axis=1)
-    flow['Hardware'] = flow[set(flow.columns)&Hardware].sum(axis=1)
-    flow['Otros_gastos'] = flow[set(flow.columns)&Otros_gastos].sum(axis=1)
+    flow['Caja'] = flow[list(set(flow.columns)&Caja)].sum(axis=1)
+    flow['Mission_costs'] = flow[list(set(flow.columns)&Mission_costs)].sum(axis=1)
+    flow['FOPEX'] = flow[list(set(flow.columns)&FOPEX)].sum(axis=1)
+    flow['OPEX'] = flow[list(set(flow.columns)&OPEX)].sum(axis=1)
+    flow['CAPEX'] = flow[list(set(flow.columns)&CAPEX)].sum(axis=1)
+    flow['Hardware'] = flow[list(set(flow.columns)&Hardware)].sum(axis=1)
+    flow['Otros_gastos'] = flow[list(set(flow.columns)&Otros_gastos)].sum(axis=1)
 
     flow['Outflows'] = flow[['Mission_costs','FOPEX','OPEX','CAPEX','Hardware','Otros_gastos']].sum(axis=1)
     
@@ -246,8 +240,9 @@ def caja(data, flow, stock, moneda):
     )
 
     fig.update_yaxes(title_text=moneda.upper())
-    fig.update_layout(title='<b>Estado de Caja</b>')
+    fig.update_layout(title='<b>Estado de {}</b>'.format(cuenta.title()))
     st.plotly_chart(fig, use_container_width=True)
+
 
     ## Burn & Runway
     
@@ -293,7 +288,10 @@ def caja(data, flow, stock, moneda):
 
     st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader('Últimos movimientos:')
+
+    ## Ultimos Movimientos
+
+    st.subheader('Últimos movimientos de {}:'.format(cuenta.title()))
 
     flujo_nombre = 'flujo (' + moneda + ')'
     stock_nombre = 'stock (' + moneda + ')'
@@ -308,11 +306,12 @@ def caja(data, flow, stock, moneda):
 
     mayor[stock_nombre] = mayor[flujo_nombre].cumsum()
     mayor = mayor[['id','fecha',flujo_nombre,stock_nombre,'categoria','sub_categoria_1','proyecto','cuenta','proveedor','detalle','comprobante','site']]
-    mayor[flujo_nombre] = mayor[flujo_nombre].map('${:,.2f}'.format)
-    mayor[stock_nombre] = mayor[stock_nombre].map('${:,.2f}'.format)
-    #mayor[flujo] = mayor[flujo].round(2)
-    #mayor[stock] = mayor[stock].round(2)
-    mayor = mayor[::-1]
+    #mayor[flujo_nombre] = mayor[flujo_nombre].map('${:,.2f}'.format)
+    #mayor[stock_nombre] = mayor[stock_nombre].map('${:,.2f}'.format)
+    mayor[flujo_nombre] = mayor[flujo_nombre].round(2)
+    mayor[stock_nombre] = mayor[stock_nombre].round(2)
+    mayor = mayor[::-1].reset_index(drop=True)
+    mayor['id'] = mayor.index
     mayor.fillna('', inplace=True)
     
     gb = GridOptionsBuilder.from_dataframe(mayor)
@@ -325,8 +324,9 @@ def caja(data, flow, stock, moneda):
     #    {'field':col, 'pivot':False, 'value':True} for col in mayor.columns]
     AgGrid(mayor, gridOptions = gridOptions)#, enable_enterprise_modules=True)
 
-def gastos(data, flow, moneda, date_range):
-    data = data[data.destino.isin(cuentas_gastos)].reset_index(drop=True).copy()
+
+def gastos(data, flow, moneda, date_range): 
+    ## Por categoria
     
     fig = go.Figure(data=[
                         go.Bar(
@@ -353,6 +353,10 @@ def gastos(data, flow, moneda, date_range):
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig, use_container_width=True)
 
+    ## Por proyectos
+
+    data = data[data.destino.isin(cuentas_gastos)].reset_index(drop=True).copy()
+
     proyectos = get_proyectos(data)
     fig = go.Figure(data=[
                       go.Bar(
@@ -377,6 +381,8 @@ def gastos(data, flow, moneda, date_range):
     fig.update_layout(title='<b>Gastos Mensuales por Destino</b>')
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig, use_container_width=True)
+
+    ## Tabla Resumen
 
     pivot = pivot_ui(
         data.loc[
@@ -457,7 +463,8 @@ def gastos(data, flow, moneda, date_range):
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig, use_container_width=True)
 
-    
+    ## Treemaps
+
     st.subheader('Treemaps')
 
     with st.form(key = 'Form'):
@@ -505,14 +512,19 @@ def gastos(data, flow, moneda, date_range):
         st.subheader( ' --> '.join(map(str.title, campos2)) )
         st.plotly_chart(fig, use_container_width=True)
 
+
+    # Tabla
+
     st.subheader('Datos Seleccionados')
 
-    tmp = data_proyectos[::-1].fillna('').copy()
+    tmp = data_proyectos[::-1].fillna('').copy().reset_index(drop=True)
     nombre = 'gasto (' + moneda + ')'
     tmp[nombre] = tmp[moneda]
     tmp = tmp[['id','fecha',nombre,'categoria','sub_categoria_1','sub_categoria_2','proyecto','sub_proyecto_1','sistema','cuenta','proveedor','detalle',
                 'comprobante','site']]
-    tmp[nombre] = tmp[nombre].map('${:,.2f}'.format)
+    #tmp[nombre] = tmp[nombre].map('${:,.2f}'.format)
+    tmp[nombre] = tmp[nombre].round(2)
+    tmp['id'] = tmp.index
     
     gb = GridOptionsBuilder.from_dataframe(tmp)
     gb.configure_pagination()
