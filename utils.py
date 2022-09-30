@@ -111,7 +111,7 @@ class Proyectos():
 
     self.proyectos = {proyecto: Proyecto(data[data.proyecto==proyecto], pd.unique(data.month)) for proyecto in self.names } 
 
-@st.cache(allow_output_mutation=True)
+@st.experimental_memo
 def load_data(url, filename):
     if os.path.exists(filename):
         os.remove(filename)
@@ -146,7 +146,7 @@ def load_data(url, filename):
 
     return data, data_distr, months, quarters, cuentas
 
-@st.cache(allow_output_mutation=True)
+@st.experimental_memo
 def load_teams(url, filename):
     if os.path.exists(filename):
         os.remove(filename)
@@ -182,7 +182,7 @@ def load_teams(url, filename):
 
     return teams
 
-@st.cache(allow_output_mutation=True)
+@st.experimental_memo
 def filter(data, sites, moneda):
     data = data[data.site.isin(sites)].reset_index(drop=True)
     flow = pd.pivot_table( data, values=moneda, index='month', columns='destino', aggfunc=sum, fill_value=0).sub( \
@@ -206,7 +206,7 @@ def filter(data, sites, moneda):
 
     return data.copy(), flow, stock
 
-@st.cache
+@st.experimental_memo
 def get_proyectos(data):
     proyectos = Proyectos(data)
     return proyectos
@@ -304,6 +304,7 @@ def caja(data, flow, stock, moneda):
         mayor = data[(data.destino == cuenta) | (data.origen == cuenta)].reset_index(drop=True).copy()
         mayor[flujo_nombre] = mayor[moneda] * ( (mayor.origen == cuenta)*-1 + (mayor.destino == cuenta)*1 )
 
+    mayor.sort_values('fecha', ascending=True, inplace=True)
     mayor[stock_nombre] = mayor[flujo_nombre].cumsum()
     mayor = mayor[['id','fecha',flujo_nombre,stock_nombre,'categoria','sub_categoria_1','proyecto','cuenta','proveedor','detalle','comprobante','site']]
     #mayor[flujo_nombre] = mayor[flujo_nombre].map('${:,.2f}'.format)
