@@ -19,7 +19,7 @@ Caja = set(['caja ars','caja usd','ml','banco ars','banco usd', 'banco uyu','ele
 Transferencias = set(['epic','seuner'])
 Aportes = set(['aportes','montero'])
 Deudas = set(['cuentas a pagar'])
-Mission_costs = set(['rideshare costs','other mission costs'])
+Mission_costs = set(['rideshare costs','mission legal costs','mission ops'])
 OPEX = set(['transporte','consumibles generales','consumibles de oficina','consumibles de ensayos',
             'consumibles para produccion de propelente',])
 Otros_gastos = set(['impuestos','legal','variacion de inventario','otros gastos varios','perdida por tc','perdida por arqueo'])
@@ -27,7 +27,7 @@ Otros_ingresos = set(['ganancia por tc','ganancia por arqueo','otros ingresos va
 FOPEX = set(['sg&a salaries','tech salaries','suscripciones','alquiler'])
 CAPEX = set(['herramientas','materiales','maquinaria','infraestructura','utilaje','mano de obra','rodados','equipo de oficina'])
 general_rd = set(['propulsion r&d','electronics r&d'])
-Hardware = set(['test equipment','vehicle r&d', 'vehicle development', 'flight tugs', 'payload adapter',
+Hardware = set(['test equipment','vehicle r&d', 'vehicle development', 'flight tugs', 'ext. flt. hardware',
                 'propellant production hardware']).union(general_rd)
 
 cuentas_gastos = OPEX.union(Mission_costs, Otros_gastos, FOPEX, CAPEX, Hardware)
