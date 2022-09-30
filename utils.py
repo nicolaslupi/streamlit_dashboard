@@ -14,25 +14,27 @@ from plotly.subplots import make_subplots
 import plotly.express as px
 from pivottablejs import pivot_ui
 
-colores = ['#1f77b4', '#ff7f0e', '#2ca02c','#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-Caja = set(['caja ars','caja usd','ml','banco ars','banco usd', 'banco uyu','electronica','estructuras','propulsion','accounting','sendwyre'])
-Transferencias = set(['epic','seuner'])
-Aportes = set(['aportes','montero'])
-Deudas = set(['cuentas a pagar'])
-Mission_costs = set(['rideshare costs','other mission costs'])
-OPEX = set(['transporte','consumibles generales','consumibles de oficina','consumibles de ensayos',
-            'consumibles para produccion de propelente',])
-Otros_gastos = set(['impuestos','legal','variacion de inventario','otros gastos varios','perdida por tc','perdida por arqueo'])
-Otros_ingresos = set(['ganancia por tc','ganancia por arqueo','otros ingresos varios'])
-FOPEX = set(['sg&a salaries','tech salaries','suscripciones','alquiler'])
-CAPEX = set(['herramientas','materiales','maquinaria','infraestructura','utilaje','mano de obra','rodados','equipo de oficina'])
-general_rd = set(['propulsion r&d','electronics r&d'])
-Hardware = set(['test equipment','vehicle r&d', 'vehicle development', 'flight tugs', 'payload adapter',
-                'propellant production hardware']).union(general_rd)
+# colores = ['#1f77b4', '#ff7f0e', '#2ca02c','#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+# Caja = set(['caja ars','caja usd','ml','banco ars','banco usd', 'banco uyu','electronica','estructuras','propulsion','accounting','sendwyre'])
+# Transferencias = set(['epic','seuner'])
+# Aportes = set(['aportes','montero'])
+# Deudas = set(['cuentas a pagar'])
+# Mission_costs = set(['rideshare costs','other mission costs'])
+# OPEX = set(['transporte','consumibles generales','consumibles de oficina','consumibles de ensayos',
+#             'consumibles para produccion de propelente',])
+# Otros_gastos = set(['impuestos','legal','variacion de inventario','otros gastos varios','perdida por tc','perdida por arqueo'])
+# Otros_ingresos = set(['ganancia por tc','ganancia por arqueo','otros ingresos varios'])
+# FOPEX = set(['sg&a salaries','tech salaries','suscripciones','alquiler'])
+# CAPEX = set(['herramientas','materiales','maquinaria','infraestructura','utilaje','mano de obra','rodados','equipo de oficina'])
+# general_rd = set(['propulsion r&d','electronics r&d'])
+# Hardware = set(['test equipment','vehicle r&d', 'vehicle development', 'flight tugs', 'payload adapter',
+#                 'propellant production hardware']).union(general_rd)
 
-cuentas_gastos = OPEX.union(Mission_costs, Otros_gastos, FOPEX, CAPEX, Hardware)
-activo = Caja.union(Mission_costs, OPEX, Otros_gastos, FOPEX, CAPEX, Hardware, Transferencias)
-pasivo = Aportes.union(Deudas, Otros_ingresos)
+# cuentas_gastos = OPEX.union(Mission_costs, Otros_gastos, FOPEX, CAPEX, Hardware)
+# activo = Caja.union(Mission_costs, OPEX, Otros_gastos, FOPEX, CAPEX, Hardware, Transferencias)
+# pasivo = Aportes.union(Deudas, Otros_ingresos)
+
+META = {}
 
 def normalize(s):
     replacements = (
@@ -90,7 +92,7 @@ class Proyecto():
     restas = pd.pivot_table( data, values='usd', index='month', columns=['sub_proyecto_1','origen'], aggfunc=sum, fill_value=0 )
     restas.columns.names = ['sub_proyecto_1','destino']
     tmp = sumas.sub(restas, axis=1, fill_value=0)
-    flow_aux[list(self.sub_proyectos)]  = np.array([tmp[sub_proyecto][list(set(tmp[sub_proyecto].columns)&cuentas_gastos)].sum(axis=1) for sub_proyecto in self.sub_proyectos]).transpose()
+    flow_aux[list(self.sub_proyectos)]  = np.array([tmp[sub_proyecto][list(set(tmp[sub_proyecto].columns)&META['cuentas_gastos'])].sum(axis=1) for sub_proyecto in self.sub_proyectos]).transpose()
     self.flow = self.flow.join(flow_aux).fillna(0)
     self.stock = self.flow.cumsum()
 
@@ -103,7 +105,7 @@ class Proyectos():
     restas.columns.names = ['proyecto','destino']
     tmp = sumas.sub(restas, axis=1, fill_value=0)
     
-    self.flow[list(self.names)] = np.array([tmp[proyecto][list(set(tmp[proyecto].columns)&cuentas_gastos)].sum(axis=1) for proyecto in self.names]).transpose()
+    self.flow[list(self.names)] = np.array([tmp[proyecto][list(set(tmp[proyecto].columns)&META['cuentas_gastos'])].sum(axis=1) for proyecto in self.names]).transpose()
     self.flow['Outflows'] = self.flow.sum(axis=1)
     self.stock = self.flow.cumsum()
     self.flow['MA'] = self.flow['Outflows'].rolling(window=3).mean()
@@ -113,18 +115,25 @@ class Proyectos():
 
 @st.experimental_memo
 def load_data(url, filename):
+    global META
+    
     if os.path.exists(filename):
         os.remove(filename)
     wget.download(url, filename)
 
-    
-    meta = pd.read_excel('data.xlsx', sheet_name='meta', header=None, index_col=0)
-    sheet_names = meta.loc['sheet_names'].values[0].split(',')
-    site_names = meta.loc['site_names'].values[0].split(',')
+    META = pd.read_excel('data.xlsx', sheet_name='meta', header=None, index_col=0)
+    META = pd.DataFrame(META[1].apply(lambda x: set(x.split(',')))).to_dict()[1]
 
+    META['cuentas_gastos'] = META['OPEX'].union(META['Mission_costs'], META['Otros_gastos'], META['FOPEX'], META['CAPEX'], META['Hardware'])
+    META['activo'] = META['Caja'].union(META['Mission_costs'], META['OPEX'], META['Otros_gastos'], META['FOPEX'], META['CAPEX'], META['Hardware'], META['Transferencias'])
+    META['pasivo'] = META['Aportes'].union(META['Deudas'], META['Otros_ingresos'])
 
-    datasets = [pd.read_excel('data.xlsx', sheet_name=sheet_name, header=2) for sheet_name in sheet_names]
-    for dataset, site_name in zip(datasets, site_names):
+    #meta = pd.read_excel('data.xlsx', sheet_name='meta', header=None, index_col=0)
+    #sheet_names = meta.loc['sheet_names'].values[0].split(',')
+    #site_names = meta.loc['site_names'].values[0].split(',')
+
+    datasets = [pd.read_excel('data.xlsx', sheet_name=sheet_name, header=2) for sheet_name in META['sheet_names']]
+    for dataset, site_name in zip(datasets, META['site_names']):
         dataset['site'] = site_name
 
     data = pd.concat(datasets, ignore_index=True)
@@ -189,13 +198,13 @@ def filter(data, sites, moneda):
            pd.pivot_table( data, values=moneda, index='month', columns='origen', aggfunc=sum, fill_value=0), \
            axis=1, fill_value=0)
 
-    flow['Caja'] = flow[list(set(flow.columns)&Caja)].sum(axis=1)
-    flow['Mission_costs'] = flow[list(set(flow.columns)&Mission_costs)].sum(axis=1)
-    flow['FOPEX'] = flow[list(set(flow.columns)&FOPEX)].sum(axis=1)
-    flow['OPEX'] = flow[list(set(flow.columns)&OPEX)].sum(axis=1)
-    flow['CAPEX'] = flow[list(set(flow.columns)&CAPEX)].sum(axis=1)
-    flow['Hardware'] = flow[list(set(flow.columns)&Hardware)].sum(axis=1)
-    flow['Otros_gastos'] = flow[list(set(flow.columns)&Otros_gastos)].sum(axis=1)
+    flow['Caja'] = flow[list(set(flow.columns)&META['Caja'])].sum(axis=1)
+    flow['Mission_costs'] = flow[list(set(flow.columns)&META['Mission_costs'])].sum(axis=1)
+    flow['FOPEX'] = flow[list(set(flow.columns)&META['FOPEX'])].sum(axis=1)
+    flow['OPEX'] = flow[list(set(flow.columns)&META['OPEX'])].sum(axis=1)
+    flow['CAPEX'] = flow[list(set(flow.columns)&META['CAPEX'])].sum(axis=1)
+    flow['Hardware'] = flow[list(set(flow.columns)&META['Hardware'])].sum(axis=1)
+    flow['Otros_gastos'] = flow[list(set(flow.columns)&META['Otros_gastos'])].sum(axis=1)
 
     flow['Outflows'] = flow[['Mission_costs','FOPEX','OPEX','CAPEX','Hardware','Otros_gastos']].sum(axis=1)
     
@@ -212,7 +221,7 @@ def get_proyectos(data):
     return proyectos
 
 def caja(data, flow, stock, moneda):
-    cuenta = st.selectbox(label='Cuenta', options=list(map(str.title, ['Todas']+list(Caja))), index=0).lower()
+    cuenta = st.selectbox(label='Cuenta', options=list(map(str.title, ['Todas']+list(META['Caja']))), index=0).lower()
     
     if cuenta == 'todas':
         cuenta = 'Caja'
@@ -297,8 +306,8 @@ def caja(data, flow, stock, moneda):
     stock_nombre = 'stock (' + moneda + ')'
     
     if cuenta == 'Caja':
-        mayor = data[(data.destino.isin(Caja)) | (data.origen.isin(Caja))].reset_index(drop=True).copy()
-        mayor[flujo_nombre] = mayor[moneda] * ( (mayor.origen.isin(Caja))*-1 + (mayor.destino.isin(Caja))*1 )
+        mayor = data[(data.destino.isin(META['Caja'])) | (data.origen.isin(META['Caja']))].reset_index(drop=True).copy()
+        mayor[flujo_nombre] = mayor[moneda] * ( (mayor.origen.isin(META['Caja']))*-1 + (mayor.destino.isin(META['Caja']))*1 )
         
     else:
         mayor = data[(data.destino == cuenta) | (data.origen == cuenta)].reset_index(drop=True).copy()
@@ -356,7 +365,7 @@ def gastos(data, flow, moneda, date_range):
 
     ## Por proyectos
 
-    data = data[data.destino.isin(cuentas_gastos)].reset_index(drop=True).copy()
+    data = data[data.destino.isin(META['cuentas_gastos'])].reset_index(drop=True).copy()
 
     proyectos = get_proyectos(data)
     fig = go.Figure(data=[
