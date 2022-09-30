@@ -14,31 +14,7 @@ from plotly.subplots import make_subplots
 import plotly.express as px
 from pivottablejs import pivot_ui
 
-<<<<<<< HEAD
 colores = ['#1f77b4', '#ff7f0e', '#2ca02c','#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-Caja = set(['caja ars','caja usd','ml','banco ars','banco usd', 'banco uyu','electronica','estructuras','propulsion','accounting','sendwyre'])
-Transferencias = set(['epic','seuner'])
-Aportes = set(['aportes','montero'])
-Deudas = set(['cuentas a pagar'])
-Mission_costs = set(['rideshare costs','mission legal costs','mission ops'])
-OPEX = set(['transporte','consumibles generales','consumibles de oficina','consumibles de ensayos',
-            'consumibles para produccion de propelente',])
-Otros_gastos = set(['impuestos','legal','variacion de inventario','otros gastos varios','perdida por tc','perdida por arqueo'])
-Otros_ingresos = set(['ganancia por tc','ganancia por arqueo','otros ingresos varios'])
-FOPEX = set(['sg&a salaries','tech salaries','suscripciones','alquiler'])
-CAPEX = set(['herramientas','materiales','maquinaria','infraestructura','utilaje','mano de obra','rodados','equipo de oficina'])
-general_rd = set(['propulsion r&d','electronics r&d'])
-Hardware = set(['test equipment','vehicle r&d', 'vehicle development', 'flight tugs', 'ext. flt. hardware',
-                'propellant production hardware']).union(general_rd)
-
-cuentas_gastos = OPEX.union(Mission_costs, Otros_gastos, FOPEX, CAPEX, Hardware)
-activo = Caja.union(Mission_costs, OPEX, Otros_gastos, FOPEX, CAPEX, Hardware, Transferencias)
-pasivo = Aportes.union(Deudas, Otros_ingresos)
-=======
-# colores = ['#1f77b4', '#ff7f0e', '#2ca02c','#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-
-META = {}
->>>>>>> cambios
 
 def normalize(s):
     replacements = (
@@ -78,13 +54,6 @@ def distribute_over_months(data):
     data.drop(data[data.fecha >= dt.datetime.today()].index, inplace=True)
     
     return data.sort_values(by=['fecha','id']).reset_index(drop=True)
-
-def get(data, cuenta, moneda):
-    if cuenta in activo:
-        res = data[data.destino == cuenta][moneda].sum() - data[data.origen == cuenta][moneda].sum()
-    elif cuenta in pasivo:
-        res = data[data.origen == cuenta][moneda].sum() - data[data.destino == cuenta][moneda].sum()
-    return res
 
 class Proyecto():
   def __init__(self, data, months):
@@ -126,7 +95,13 @@ def load_data(url, filename):
     wget.download(url, filename)
 
     META = pd.read_excel('data.xlsx', sheet_name='meta', header=None, index_col=0)
-    META = pd.DataFrame(META[1].apply(lambda x: set(x.split(',')))).to_dict()[1]
+    META = META[1].to_dict()
+
+    for key, value in META.items():
+        if key not in ['sheet_names','site_names']:
+            META[key] = set(value.split(','))
+        else:
+            META[key] = value.split(',')
 
     META['cuentas_gastos'] = META['OPEX'].union(META['Mission_costs'], META['Otros_gastos'], META['FOPEX'], META['CAPEX'], META['Hardware'])
     META['activo'] = META['Caja'].union(META['Mission_costs'], META['OPEX'], META['Otros_gastos'], META['FOPEX'], META['CAPEX'], META['Hardware'], META['Transferencias'])
@@ -135,11 +110,12 @@ def load_data(url, filename):
     datasets = [pd.read_excel('data.xlsx', sheet_name=sheet_name, header=2) for sheet_name in META['sheet_names']]
     for dataset, site_name in zip(datasets, META['site_names']):
         dataset['site'] = site_name
-
+        
     data = pd.concat(datasets, ignore_index=True)
     
     data.columns = [col.lower().replace(' ', '_') for col in data.columns]
     data.drop(['year','month'], axis=1, inplace=True)
+    data = data.sort_values('fecha').reset_index(drop=True)
     data['month'] = data.fecha.apply(lambda fecha: fecha.replace(day=1))
     data['quarter'] = data.month.apply(lambda fecha: fecha.replace(month=int(np.ceil(fecha.month/3))))
     data['cuenta'] = data.cuenta.apply(process_string)
