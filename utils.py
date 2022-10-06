@@ -15,6 +15,7 @@ import plotly.express as px
 from pivottablejs import pivot_ui
 
 colores = ['#1f77b4', '#ff7f0e', '#2ca02c','#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+META = dict()
 
 def normalize(s):
     replacements = (
@@ -367,6 +368,60 @@ def gastos(data, flow, moneda, date_range):
     fig.update_layout(title='<b>Gastos Mensuales por Destino</b>')
     fig.update_yaxes(title_text=moneda.upper())
     st.plotly_chart(fig, use_container_width=True)
+
+    ## Planned vs. Executed
+
+    start, end = pd.to_datetime('2021-07-01'), data.month.iloc[-1]
+
+    salaries = flow.loc[start:end,flow.columns[flow.columns.str.contains('salaries')]].sum().sum()
+    fopex_ex_salaries = flow.loc[start:end,'FOPEX'].sum().sum() - salaries
+    opex = flow.loc[start:end,'OPEX'].sum().sum()
+    tools = flow.loc[start:end,'herramientas'].sum().sum()
+    machinery = flow.loc[start:end,['herramientas','utilaje']].sum().sum()
+    infraestructure = flow.loc[start:end,['infraestructura','mano de obra', 'utilaje']].sum().sum()
+    office_eq = flow.loc[start:end,['equipo de oficina', 'rodados']].sum().sum()
+    test_eq = flow.loc[start:end,'test equipment'].sum().sum()
+    vehicle_rd = flow.loc[start:end,'vehicle r&d'].sum().sum()
+    general_rd = flow.loc[start:end,list(META['general_rd'])].sum().sum()
+    prop_prod = flow.loc[start:end,'propellant production hardware'].sum().sum()
+    flight_tugs = flow.loc[start:end,'flight tugs'].sum().sum()
+    ext_flt = flow.loc[start:end,'ext. flt. hardware'].sum().sum()
+    vehicle_dev = flow.loc[start:end,'vehicle development'].sum().sum()
+    launch_costs = flow.loc[start:end,'rideshare costs'].sum().sum()
+    mission_legal = flow.loc[start:end,'mission legal costs'].sum().sum()
+    mission_ops = flow.loc[start:end,'mission ops'].sum().sum()
+
+    planned_executed = pd.DataFrame(
+                        index=['Planned','Executed'],
+                        data={
+                            'Salaries': [861173, salaries],
+                            'FOPEX (Ex. Salaries)': [115275, fopex_ex_salaries],
+                            'OPEX': [115558, opex],
+                            'Tools': [36849, tools],
+                            'Machinery': [60750, machinery],
+                            'Infraestructure': [61050, infraestructure],
+                            'Office Eq.': [20000, office_eq],
+                            'Test Eq.': [94680, test_eq],
+                            'Vehicle R&D': [51400, vehicle_rd],
+                            'General R&D': [50000, general_rd],
+                            'Prop. Prod. Hardware': [15000, prop_prod],
+                            'Flight Tugs': [250000, flight_tugs],
+                            'Ext. Flt. Hardware': [100000, ext_flt],
+                            'Vehicle Dev': [110000, vehicle_dev],
+                            'Launch Costs': [800000, launch_costs],
+                            'Mission Legal Costs': [50000, mission_legal],
+                            'Mission OPS': [70000, mission_ops]
+                        }
+                    ).transpose().round(-1)
+    
+    planned_executed = pd.concat([
+                        planned_executed,
+                        pd.DataFrame(planned_executed.sum(), columns=['Total:']).transpose()
+                    ])
+
+    planned_executed['diff'] = planned_executed.Executed - planned_executed.Planned
+    st.title('Gasto Planeado Vs. Ejecutado desde Julio 2021')
+    st.dataframe(planned_executed.astype(int), use_container_width=True)
 
     ## Tabla Resumen
 
