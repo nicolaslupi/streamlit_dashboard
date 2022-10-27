@@ -439,7 +439,9 @@ def gastos(data, flow, moneda, date_range):
             'cuenta',
             'proveedor',
             'detalle',
-            'usd'
+            'usd',
+            'month',
+            'site'
         ]],
         rows=['proyecto','sub_proyecto_1','categoria'],
         #cols=['categoria'],
@@ -448,9 +450,12 @@ def gastos(data, flow, moneda, date_range):
         outfile_path='/tmp/pivottablejs.html'
         )
     st.title('Tabla Resumen')
+
+    
     st.write('Para el período ' + str(date_range[0]) + ' - ' + str(date_range[1]))
+    
     with open(pivot.src) as pivot:
-        components.html(pivot.read(), width=900, height=1000, scrolling=True)
+        components.html(pivot.read(), height=1000, scrolling=True)
 
     st.title('Proyectos')
     st.write('Para el período ' + str(date_range[0]) + ' - ' + str(date_range[1]))
