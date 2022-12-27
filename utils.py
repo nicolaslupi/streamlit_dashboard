@@ -190,7 +190,7 @@ def filter(data, sites, moneda):
     stock = flow.cumsum()
     
     flow['MA'] = flow['Outflows'].rolling(window=3).mean()
-    flow.iloc[-1,-1] = flow.iloc[-2,-1]
+    #flow.iloc[-1,-1] = flow.iloc[-2,-1]
 
     return data.copy(), flow, stock
 
