@@ -373,7 +373,7 @@ def gastos(data, flow, moneda, date_range):
 
     start, end = pd.to_datetime('2021-07-01'), data.month.iloc[-1]
 
-    try:
+    if set(pd.unique(data.site)) == set(META['site_names']): # Solo lo muestro si elijo todos los sitios
 
         salaries = flow.loc[start:end,flow.columns[flow.columns.str.contains('salaries')]].sum().sum()
         fopex_ex_salaries = flow.loc[start:end,'FOPEX'].sum().sum() - salaries
@@ -424,8 +424,7 @@ def gastos(data, flow, moneda, date_range):
         planned_executed['diff'] = planned_executed.Executed - planned_executed.Planned
         st.title('Gasto Planeado Vs. Ejecutado desde Julio 2021')
         st.dataframe(planned_executed.astype(int), use_container_width=True)
-    except:
-        pass
+    
 
     ## Tabla Resumen
 
