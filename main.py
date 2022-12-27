@@ -44,7 +44,7 @@ if authentication_status:
 
   st.sidebar.header("Navegación")
 
-  pagina = st.sidebar.radio('', options=['Caja','Gastos','Aportes','Equipo'], index=0)
+  pagina = st.sidebar.radio('', options=['Caja','Gastos','Aportes','Equipo','Configuración'], index=0)
   st.sidebar.subheader("Parámetros generales")
 
   moneda = st.sidebar.selectbox(
@@ -78,11 +78,21 @@ if authentication_status:
     st.title('Aportes')
     date_range = st.sidebar.date_input('Rango de fechas', min_value=months[0], value=(months[0], data_aux.fecha.iloc[-1]), max_value=data_aux.fecha.values[-1])
     utils.aportes(data_aux, moneda.lower(), date_range)
-  else:
+  elif pagina == 'Equipo':
     st.title('Equipo')
     date_range = st.sidebar.date_input('Rango de fechas', min_value=months[0], value=(months[0], data_aux.fecha.iloc[-1]), max_value=data_aux.fecha.values[-1])
     utils.equipo(data_aux, teams, moneda.lower(), date_range)
-
+  elif pagina == 'Configuración':
+    st.title('Configuración')
+    opcion = st.radio('', options=['','Cambiar contraseña'])
+    if opcion == 'Cambiar contraseña':
+      try:
+        if authenticator.reset_password(username, 'Reset password'):
+          st.success('Password modified successfully')
+          with open('config.yaml', 'w') as file:
+            yaml.dump(config, file, default_flow_style=False)
+      except Exception as e:
+        st.error(e)
 
 elif authentication_status == False:
   st.error('Username/password is incorrect')

@@ -4,7 +4,7 @@ cookie:
   name: epic_dashboard
 credentials:
   usernames:
-    Epicspace:
+    epicspace:
       email: nlupi@epic-aerospace.com
       name: Nicolas Lupi
-      password: '$2b$12$8Yk85oeCeXT7nXfIQmC5cexLM/TWjzL4aE.E4Qe9XJWtKsT5dSM1e'
+      password: $2b$12$6fzQhDDTu2nECs.d9GaBrehbLgxFT8Q8zL1FDbjc3Q./MOkGbQ.o6
